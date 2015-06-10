@@ -1,0 +1,90 @@
+# MAKEFILE NOTES
+# := <rule>   expanded ONCE
+#  = <rule>   expanded whenever used
+PROJ_ROOT=..
+
+#make SILENT=no for a verbose build
+SILENT?=yes
+
+#default BLD_CONFIG to RELEASE
+#BLD_CONFIG?=RELEASE
+BLD_CONFIG?=DEBUG
+ifeq ($(BLD_CONFIG),RELEASE)
+	CFLAGS += -DRELEASE
+endif
+
+OBJS_DIR = build
+CALC_OBJS = $(addprefix $(OBJS_DIR)/, $(addsuffix .o, $(basename $(notdir $(1)))))
+CALC_OBJS2 = $(addsuffix .o, $(basename $(notdir $(1))))
+
+# Target names
+PROG:=USBATTEN
+LOADER:=SECLOAD
+
+#CFLAGS+=-ggdb -O0 -std=gnu99  -ffunction-sections -fdata-sections
+CFLAGS+=-O2 -ggdb -std=gnu99 -fomit-frame-pointer -falign-functions=16 -ffunction-sections -fdata-sections
+#CFLAGS+= -fshort-wchar -mabi=aapcs -mapcs-frame
+WARNINGS:= -Wall -Wextra
+WARNINGS+= -Werror
+INCLUDE=-I . 
+
+CFLAGS += -D CORE_M4 -mcpu=$(CPU) -mthumb -march=$(ARCH)  $(INCLUDE) $(WARNINGS) 
+
+all: $(OBJS_DIR) $(PROG).bin $(LOADER).bin ../tools/version_print
+
+include mk/cross-tools.mk
+include mk/target.mk
+include mk/freertos.mk
+include mk/version.mk
+
+VPATH=.:./secondary_loader:./CException:$(RTOS_SOURCE_DIR):$(RTOS_SOURCE_DIR)/portable/MemMang
+VPATH+=:$(RTOS_SOURCE_DIR)/portable/$(FREERTOS_PORT)
+VPATH+=:$(PROJ_ROOT)/lpcopen:$(LPCCHIP_COMMON):$(LPCCHIP):$(LPCIP):./tek_opts
+
+
+$(OBJS_DIR):
+	mkdir -p $@
+
+
+##############
+# Primary Target (Application) Build
+##############
+
+APP_SRCS =startup.c main.c sys_init.c syscalls.c printf-stdarg.c \
+CException.c
+
+APP_LIBS = libFreeRTOS.a
+APP_INCLUDE = $(FREERTOS_INC) -ICException
+APP_OBJS = $(call CALC_OBJS,$(APP_SRCS))
+
+
+$(PROG).elf : LDSCRIPT := standalone.ld
+$(PROG).elf : INCLUDE += $(APP_INCLUDE)
+$(PROG).elf : CFLAGS += $(APP_CFLAGS)
+$(PROG).elf : $(OBJS_DIR) version $(APP_LIBS) $(APP_OBJS) Makefile
+	@echo Linking $(PROG).elf ...
+	$(CC) $(CFLAGS) $(APP_OBJS) $(APP_LIBS) $(LINKER_FLAGS)
+	$(SIZE) $(PROG).elf
+	$(TOOLS)/makeMemMap $(PROG).elf
+	$(OBJDUMP) -dSx $(PROG).elf > $(PROG).asm
+
+$(PROG).bin: $(PROG).elf
+	$(OBJCOPY) -O binary $(PROG).elf $(PROG).bin
+
+download: $(PROG).elf
+	$(OPENOCD) -f openocd.cfg -c "burnbabyburn $(PROG).elf" -c "shutdown"
+
+# Version printer is used by FirmwareUpdater to record metadata about the
+# embedded firmware update
+../tools/version_print: version_print.c version.h
+	gcc -D$(BLD_CONFIG) -o $@ $< -lc
+
+include mk/tags.mk
+
+clean : cleantags
+	rm -f $(OBJS) *.elf *.a *.map *.asm \#* *~ *.o *.elf *.bin *.hdr version.h
+	rm -f ../tools/version_print
+	rm -rf build/
+	rm -f build_*
+
+include mk/rules.mk
