@@ -1,10 +1,8 @@
 
 
 ## LPC4330 Specific Definitions
-ARCH = armv7e-m
+#ARCH = armv7e-m
 CPU = cortex-m4
-MX = M4
-CHIP ?= CHIP_LPC43XX
 FLASHK ?= 512
 RAMK ?= 192
 
@@ -16,8 +14,10 @@ LIBC?=NEWLIB
 # Switch FPU on/off based on which FreeRTOS port we use
 #
 
+
 ifeq ($(FREERTOS_PORT),GCC/ARM_CM4F)
 	USE_FPU := yes
+	FP := HARD
 else
 	USE_FPU := no
 endif

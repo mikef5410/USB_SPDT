@@ -23,18 +23,19 @@ LOADER:=SECLOAD
 
 #CFLAGS+=-ggdb -O0 -std=gnu99  -ffunction-sections -fdata-sections
 CFLAGS+=-O2 -D__STM32__ -ggdb -std=gnu99 -fomit-frame-pointer -falign-functions=16 -ffunction-sections -fdata-sections
+
 #CFLAGS+= -fshort-wchar -mabi=aapcs -mapcs-frame
 WARNINGS:= -Wall -Wextra
 WARNINGS+= -Werror
 INCLUDE=-I . 
 
-CFLAGS += -D CORE_M4 -mcpu=$(CPU) -mthumb -march=$(ARCH)  $(INCLUDE) $(WARNINGS) 
+CFLAGS += -mcpu=$(CPU) -mthumb $(INCLUDE) $(WARNINGS) 
 
 all: $(OBJS_DIR) $(PROG).bin $(LOADER).bin ../tools/version_print
 
 include mk/cross-tools.mk
-include mk/target.mk
 include mk/freertos.mk
+include mk/target.mk
 include mk/version.mk
 
 VPATH=.:./secondary_loader:./CException:$(RTOS_SOURCE_DIR):$(RTOS_SOURCE_DIR)/portable/MemMang
