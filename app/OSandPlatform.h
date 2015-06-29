@@ -10,8 +10,8 @@
 #define OSandPlatformGLOBAL extern "C"
 #else
 #define OSandPlatformGLOBAL extern
-#endif  /*__cplusplus*/
-#endif                          /*GLOBAL_OSandPlatform */
+#endif	/*__cplusplus*/
+#endif				/*GLOBAL_OSandPlatform */
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,17 +38,17 @@ extern "C" {
 #include <strings.h>
 #include <limits.h>
 
-#include "usbcmdio.h"  
+#include "usbcmdio.h"
 
 #define CEXCEPTION_USE_CONFIG_FILE
 #include "CException.h"
 
 #ifdef __cplusplus
-extern "C" {
+  extern "C" {
 #endif
 
 //Chip driver status return values
-typedef int32_t ChipDriverStatus_t;
+    typedef int32_t ChipDriverStatus_t;
 #define SUCCESS 0
 #define FAILURE 1
 #define DO_NOT_TX -1
@@ -67,14 +67,15 @@ typedef int32_t ChipDriverStatus_t;
 //#define TRIG_HARDFAULT *((volatile int*)(0x14017644))=0
 
 //We'll define this later
-typedef void BaseSequentialStream;
+    typedef void BaseSequentialStream;
 
 // HACK HACK HACK
 // TEMPORARY HACK TO MAKE PRINTF WORK WITHIN FREERTOS TASKS
-char pbuf[1024];
-extern int myprintf(const char *format, ...);
-extern int mysprintf(char *out, const char *format, ...);
-extern int mysnprintf( char *buf, unsigned int count, const char *format, ... );
+    char pbuf[1024];
+    extern int myprintf(const char *format, ...);
+    extern int mysprintf(char *out, const char *format, ...);
+    extern int mysnprintf(char *buf, unsigned int count,
+			  const char *format, ...);
 
 #ifdef RELEASE
 #define DPRINTF(...)
@@ -92,28 +93,24 @@ extern int mysnprintf( char *buf, unsigned int count, const char *format, ... );
   } else { \
     MSleep(x); \
   }  } while(0)
-  
+
+#ifdef __cplusplus
+  }
+#endif
+  typedef struct task_info {
+    uint32_t ExceptionTaskID;
+  } task_info_t;
+
+  OSandPlatformGLOBAL uint32_t numRegisteredTasks;	//main.c
+
+
 #ifdef __cplusplus
 }
 #endif
-
-typedef struct task_info {
-  uint32_t ExceptionTaskID;
-} task_info_t;
-
-OSandPlatformGLOBAL uint32_t numRegisteredTasks; //main.c
-
-
-#ifdef __cplusplus
-}
-#endif
-  
-
-
 extern char __StackTop;
 extern char __StackLimit;
 extern char __heap_start;
 extern char __heap_end;
-#endif //OSandPlatform_INCLUDED
+#endif				//OSandPlatform_INCLUDED
 
 /// @}

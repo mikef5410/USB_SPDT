@@ -4,7 +4,7 @@
 PROJ_ROOT=..
 
 #make SILENT=no for a verbose build
-SILENT?=yes
+SILENT?=no
 
 #default BLD_CONFIG to RELEASE
 #BLD_CONFIG?=RELEASE
@@ -22,7 +22,7 @@ PROG:=USBATTEN
 LOADER:=SECLOAD
 
 #CFLAGS+=-ggdb -O0 -std=gnu99  -ffunction-sections -fdata-sections
-CFLAGS+=-O2 -ggdb -std=gnu99 -fomit-frame-pointer -falign-functions=16 -ffunction-sections -fdata-sections
+CFLAGS+=-O2 -D__STM32__ -ggdb -std=gnu99 -fomit-frame-pointer -falign-functions=16 -ffunction-sections -fdata-sections
 #CFLAGS+= -fshort-wchar -mabi=aapcs -mapcs-frame
 WARNINGS:= -Wall -Wextra
 WARNINGS+= -Werror
