@@ -29,12 +29,13 @@ WARNINGS:= -Wall -Wextra
 WARNINGS+= -Werror
 INCLUDE=-I . 
 
-CFLAGS += -mcpu=$(CPU) -mthumb $(INCLUDE) $(WARNINGS) 
+CFLAGS += -mcpu=$(CPU) -march=$(ARCH) -mthumb $(INCLUDE) $(WARNINGS) 
 
 all: $(OBJS_DIR) $(PROG).bin $(LOADER).bin ../tools/version_print
 
 include mk/cross-tools.mk
 include mk/freertos.mk
+include mk/libopencm3.mk
 include mk/target.mk
 include mk/version.mk
 
@@ -54,8 +55,8 @@ $(OBJS_DIR):
 APP_SRCS =startup.c main.c sys_init.c syscalls.c printf-stdarg.c \
 CException.c
 
-APP_LIBS = libFreeRTOS.a
-APP_INCLUDE = $(FREERTOS_INC) -ICException
+APP_LIBS = libFreeRTOS.a $(LIBOPENCM3_LIBNAME)
+APP_INCLUDE = $(FREERTOS_INC) -ICException $(LIBOPENCM3_INC)
 APP_OBJS = $(call CALC_OBJS,$(APP_SRCS))
 
 
@@ -82,7 +83,7 @@ download: $(PROG).elf
 
 include mk/tags.mk
 
-clean : cleantags
+clean:: cleantags
 	rm -f $(OBJS) *.elf *.a *.map *.asm \#* *~ *.o *.elf *.bin *.hdr version.h
 	rm -f ../tools/version_print
 	rm -rf build/

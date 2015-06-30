@@ -350,8 +350,8 @@ void Reset_Handler(void)
 #endif
 
   // re-assert static values essential to main()
-  currentClockRate = Chip_Clock_GetRate(CLK_MX_MXCORE);	// should be 204 MHz, or close thereto
-  ClockRateHigh = 1;
+  //currentClockRate = Chip_Clock_GetRate(CLK_MX_MXCORE);	// should be 204 MHz, or close thereto
+  //ClockRateHigh = 1;
   // Call main()
   main();
 

@@ -30,6 +30,7 @@ extern int _write(int file __attribute__ ((unused)), char *ptr, int len);
 #include <stdarg.h>
 #include "FreeRTOS.h"
 #include "task.h"
+#include <core_cm3.h>
 static void printchar(char **str, int c)
 {
 
@@ -187,13 +188,13 @@ static int print(char **out, const char *format, va_list args)
 
 int myprintf(const char *format, ...)
 {
-  __disable_irq();
+  cm_disable_interrupts();
 
   // taskENTER_CRITICAL();
   va_list args;
   va_start(args, format);
   int rtn = print(0, format, args);
-  __enable_irq();
+  cm_enable_interrupts();
 
   // taskEXIT_CRITICAL();
   return (rtn);
