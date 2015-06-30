@@ -22,7 +22,7 @@ PROG:=USBATTEN
 LOADER:=SECLOAD
 
 #CFLAGS+=-ggdb -O0 -std=gnu99  -ffunction-sections -fdata-sections
-CFLAGS+=-O2 -D__STM32__ -ggdb -std=gnu99 -fomit-frame-pointer -falign-functions=16 -ffunction-sections -fdata-sections
+CFLAGS+=-O2 -D__STM32__ -DSTM32F4 -ggdb -std=gnu99 -fomit-frame-pointer -falign-functions=16 -ffunction-sections -fdata-sections
 
 #CFLAGS+= -fshort-wchar -mabi=aapcs -mapcs-frame
 WARNINGS:= -Wall -Wextra
@@ -52,11 +52,10 @@ $(OBJS_DIR):
 # Primary Target (Application) Build
 ##############
 
-APP_SRCS =startup.c main.c sys_init.c syscalls.c printf-stdarg.c \
-CException.c
+APP_SRCS =startup.c main.c sys_init.c syscalls.c printf-stdarg.c 
 
 APP_LIBS = libFreeRTOS.a $(LIBOPENCM3_LIBNAME)
-APP_INCLUDE = $(FREERTOS_INC) -ICException $(LIBOPENCM3_INC)
+APP_INCLUDE = $(FREERTOS_INC) $(LIBOPENCM3_INC)
 APP_OBJS = $(call CALC_OBJS,$(APP_SRCS))
 
 

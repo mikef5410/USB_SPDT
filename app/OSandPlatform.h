@@ -38,10 +38,9 @@ extern "C" {
 #include <strings.h>
 #include <limits.h>
 
-#include "usbcmdio.h"
 
-#define CEXCEPTION_USE_CONFIG_FILE
-#include "CException.h"
+//#define CEXCEPTION_USE_CONFIG_FILE
+//#include "CException.h"
 
 #ifdef __cplusplus
   extern "C" {

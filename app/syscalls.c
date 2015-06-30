@@ -5,13 +5,15 @@
 /*                                                                     */
 /***********************************************************************/
 #include <stdlib.h>
-#include <reent.h>
 #include <sys/stat.h>
 #include <string.h>
 #include "OSandPlatform.h"
 
-#include "tek_board_init.h"
-#include "sys_config.h"
+#define EOF (-1)
+
+int Board_UARTGetChar(void);
+void Board_UARTPutChar(char ch);
+void Board_UARTPutSTR(char *str);
 
 static char *heap_ptr = 0;	/* Points to current end of the heap.   */
 extern char __heap_start;	/* Setup in our linker script */
@@ -142,4 +144,32 @@ int _write(int file __attribute__ ((unused)), char *ptr, int len)
     Board_UARTPutChar(*(ptr + todo));
   }
   return len;
+}
+
+
+/* Gets a character from the UART, returns EOF if no character is ready */
+int Board_UARTGetChar(void)
+{
+  //uint8_t data;
+  
+  //if (Chip_UART_ReceiveByte(DEBUG_UART, &data) == SUCCESS) {
+  //    return (int) data;
+  // }
+  return EOF;
+}
+
+/* Sends a character on the UART */
+void Board_UARTPutChar(char ch)
+{
+
+  ch++;
+  //while (Chip_UART_SendByte(DEBUG_UART, (uint8_t) ch) == ERROR) {}
+}
+
+/* Outputs a string on the debug UART */
+void Board_UARTPutSTR(char *str)
+{
+  while (*str != '\0') {
+    Board_UARTPutChar(*str++);
+  }
 }

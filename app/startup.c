@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <libopencm3/stm32/rcc.h>
+#include <libopencm3/cm3/scb.h>
 
 #define HARDFAULT_SHOULD_RESET
 void selfReset(void);
@@ -268,7 +270,6 @@ void (*const FlashVectors[]) (void) =
 //68
 void (*const RAMVectors[NVECS]) (void) __attribute__ ((section("vtable")));
 
-extern void SystemInit(void);
 extern void __data_start__;
 extern void __data_end__;
 extern uint32_t currentClockRate;
@@ -480,4 +481,33 @@ void IntDefaultHandler(void)
 void selfReset(void)
 {
   //Chip_RGU_TriggerReset (RGU_MASTER_RST);
+}
+
+
+
+ //****************************************************************************
+ // S y s t e m I n i t
+ //****************************************************************************
+
+ /**
+ * SystemInit() is called prior to the application and sets up system
+ * clocking, memory, and any resources needed prior to the application
+ * starting.
+ */
+void SystemInit(void)
+{
+#if defined(CORE_M3) || defined(CORE_M4)
+#if defined(__FPU_PRESENT) && __FPU_PRESENT == 1
+  fpuInit();
+#endif
+#endif
+  
+  // Now setup the clocks ...
+  // Discovery is 8MHz crystal, use 120MHz core
+  rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_120MHZ]);
+
+  rcc_periph_clock_enable(RCC_GPIOA);
+  rcc_periph_clock_enable(RCC_OTGFS);
+
+  return;
 }

@@ -5,7 +5,7 @@ LIBOPENCM3_TARGET := stm32/f4
 
 LIBOPENCM3_DIR := $(PROJ_ROOT)/external/libopencm3
 
-LIBOPENCM3_INC := -I$(LIBOPENCM3_DIR)/include/libopencm3 -I$(LIBOPENCM3_DIR)/include/libopencmsis 
+LIBOPENCM3_INC :=  -I$(LIBOPENCM3_DIR)/include 
 
 LIBOPENCM3_LIBNAME := libopencm3_$(subst /,,$(LIBOPENCM3_TARGET)).a
 
