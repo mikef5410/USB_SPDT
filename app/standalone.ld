@@ -1,173 +1,125 @@
-/* STM32 Loader Script */
+/*
+ * This file is part of the libopencm3 project.
+ *
+ * Copyright (C) 2009 Uwe Hermann <uwe@hermann-uwe.de>
+ *
+ * This library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this library.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
+/* Generic linker script for STM32 targets using libopencm3. */
+
+/* Memory regions must be defined in the ld script which includes this one. */
 
 MEMORY
 {
   /* Define each memory region */
-  RamLoc192 (rwx) : ORIGIN = 0x20000000, LENGTH = 192K
-  FLASH (rx) : ORIGIN = 0x8000000, LENGTH = 1M
+  RamLoc192 (rwx) : ORIGIN = 0x20000000, LENGTH = 128K
+  FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 1M
 }
 
 REGION_ALIAS("RAM", RamLoc192);  /*Put everything here for now */
+REGION_ALIAS("ram", RamLoc192);  /*Put everything here for now */
+REGION_ALIAS("rom", FLASH);  /*Put everything here for now */
 
   /* Define a symbol for the top of each memory region */
-  __top_RamLoc128 = 0x10000000 + 0x30000;
+  __top_RamLoc192 = 0x20000000 + 0x20000;
   __top_FLASH = 0x0 + 1M;
 
   __stack_size = 10240;
 
-/* Linker script to place sections and symbol values. Should be used together
- * with other linker script that defines memory regions FLASH and RAM.
- * It references following symbols, which must be defined in code:
- *   Reset_Handler : Entry of reset handler
- * 
- * It defines following symbols, which code can use without definition:
- *   __exidx_start
- *   __exidx_end
- *   __etext
- *   __data_start__
- *   __preinit_array_start
- *   __preinit_array_end
- *   __init_array_start
- *   __init_array_end
- *   __fini_array_start
- *   __fini_array_end
- *   __data_end__
- *   __bss_start__
- *   __bss_end__
- *   __end__
- *   end
- *   __HeapLimit
- *   __StackLimit
- *   __StackTop
- *   __stack
- */
-ENTRY(Reset_Handler)
+/* Enforce emmition of the vector table. */
+EXTERN (vector_table)
 
+/* Define the entry point of the output file. */
+ENTRY(reset_handler)
+
+/* Define sections. */
 SECTIONS
 {
-        .text : ALIGN(4)
-        {
-                FILL(0xFF)
-                KEEP(*(.isr_vector))
-
-               /* Global Section Table */
-                . = ALIGN(4) ;
-                __section_table_start = .;
-                __data_section_table = .;
-                /*3 columns for copy from Flash->SRAM: SRC, DEST, LEN*/
-                LONG(LOADADDR(.data));
-                LONG(    ADDR(.data)) ;
-                LONG(  SIZEOF(.data));
-                __data_section_table_end = .;
-                __bss_section_table = .;
-                /*Two columns for zeroing sections: START, LEN*/
-                LONG(    ADDR(.bss));
-                LONG(  SIZEOF(.bss));
-                 __bss_section_table_end = .;
-                __section_table_end = . ;
-                /* End of Global Section Table */
- 
+	.text : {
+		*(.vectors)	/* Vector table */
                 *(.after_vectors*)
-                *(.text*)
+             	*(.text*)	/* Program code */
+		. = ALIGN(4);
+		*(.rodata*)	/* Read-only data */
+		. = ALIGN(4);
+	} >rom
 
-                KEEP(*(.init))
-                KEEP(*(.fini))
+	/* C++ Static constructors/destructors, also used for __attribute__
+	 * ((constructor)) and the likes */
+	.preinit_array : {
+		. = ALIGN(4);
+		__preinit_array_start = .;
+		KEEP (*(.preinit_array))
+		__preinit_array_end = .;
+	} >rom
+	.init_array : {
+		. = ALIGN(4);
+		__init_array_start = .;
+		KEEP (*(SORT(.init_array.*)))
+		KEEP (*(.init_array))
+		__init_array_end = .;
+	} >rom
+	.fini_array : {
+		. = ALIGN(4);
+		__fini_array_start = .;
+		KEEP (*(.fini_array))
+		KEEP (*(SORT(.fini_array.*)))
+		__fini_array_end = .;
+	} >rom
 
-                /* .ctors */
-                *crtbegin.o(.ctors)
-                *crtbegin?.o(.ctors)
-                *(EXCLUDE_FILE(*crtend?.o *crtend.o) .ctors)
-                *(SORT(.ctors.*))
-                *(.ctors)
+	/*
+	 * Another section used by C++ stuff, appears when using newlib with
+	 * 64bit (long long) printf support
+	 */
+	.ARM.extab : {
+		*(.ARM.extab*)
+	} >rom
+	.ARM.exidx : {
+		__exidx_start = .;
+		*(.ARM.exidx*)
+		__exidx_end = .;
+	} >rom
 
-                /* .dtors */
-                *crtbegin.o(.dtors)
-                *crtbegin?.o(.dtors)
-                *(EXCLUDE_FILE(*crtend?.o *crtend.o) .dtors)
-                *(SORT(.dtors.*))
-                *(.dtors)
+	. = ALIGN(4);
+	_etext = .;
 
-                *(.rodata*)
+	.data : {
+		_data = .;
+		*(.data*)	/* Read-write initialized data */
+		. = ALIGN(4);
+		_edata = .;
+	} >ram AT >rom
+	_data_loadaddr = LOADADDR(.data);
 
-                KEEP(*(.eh_frame*))
-        } > FLASH /*AT> FLASH*/
-
-        /*
-         * for exception handling/unwind - some Newlib functions (in common
-         * with C++ and STDC++) use this. 
-         * Use KEEP so not discarded with --gc-sections
-         */
-        .ARM.extab : 
-        {
-                KEEP(*(.ARM.extab* .gnu.linkonce.armextab.*))
-        } > FLASH
-
-        __exidx_start = .;
-        .ARM.exidx :
-        {
-                KEEP(*(.ARM.exidx* .gnu.linkonce.armexidx.*))
-        } > FLASH
-        __exidx_end = .;
-
-        __etext = .;
- 
- 
-        /*Data section is loaded into Flash (AT(__etext) and copied to RAM at startup*/        
-        .data :  
-        {
-                __data_start__ = .;
-                RAMVectors = .;
-                *(vtable)
-                *(.data*)
-
-                . = ALIGN(4);
-                /* preinit data */
-                PROVIDE_HIDDEN (__preinit_array_start = .);
-                KEEP(*(.preinit_array))
-                PROVIDE_HIDDEN (__preinit_array_end = .);
-
-                . = ALIGN(4);
-                /* init data */
-                PROVIDE_HIDDEN (__init_array_start = .);
-                KEEP(*(SORT(.init_array.*)))
-                KEEP(*(.init_array))
-                PROVIDE_HIDDEN (__init_array_end = .);
+	.bss : {
+		*(.bss*)	/* Read-write zero initialized data */
+		*(COMMON)
+		. = ALIGN(4);
+		_ebss = .;
+	} >ram
 
 
-                . = ALIGN(4);
-                /* finit data */
-                PROVIDE_HIDDEN (__fini_array_start = .);
-                KEEP(*(SORT(.fini_array.*)))
-                KEEP(*(.fini_array))
-                PROVIDE_HIDDEN (__fini_array_end = .);
 
-                KEEP(*(.jcr*))
-                . = ALIGN(4);
-                /* All data end */
-                __data_end__ = .;
-
-        } > RAM AT> FLASH
-
-        /* BSS gets zeroed at startup */
-        .bss :
-        {
-                . = ALIGN(4);
-                __bss_start__ = .;
-                *(.bss*)
-                *(COMMON)
-                . = ALIGN(4);
-                __bss_end__ = .;
-        } > RAM
-
-
-        /* Set stack top to end of RAM, and stack limit move down by
+        /* Set stack top to end of ram, and stack limit move down by
          * __stack_size 
          * Heap is everything between BSS and stack
          */
-        __StackTop = ORIGIN(RAM) + LENGTH(RAM);
-        __StackLimit = __StackTop - 10240;
+        __StackTop = ORIGIN(ram) + LENGTH(ram);
+        __StackLimit = __StackTop - __stack_size;
         PROVIDE(__stack = __StackTop);
+        PROVIDE(_stack = __StackTop);
 
         __heap_end = __StackLimit - 1;
 
@@ -177,7 +129,7 @@ SECTIONS
                 __end__ = .;
                 *(.heap*)
                 . =  __heap_end;
-        } > RAM
+        } > ram
      
 
         /* .stack_dummy section doesn't contains any symbols. It is only
@@ -188,8 +140,19 @@ SECTIONS
            . = __StackLimit;
            . += __stack_size;
            *(.stack*)
-        } > RAM
+        } > ram
    
-        /* Check if data + heap + stack exceeds RAM limit */
-        ASSERT(__StackLimit >= __heap_end, "region RAM overflowed with stack")
+        /* Check if data + heap + stack exceeds ram limit */
+        ASSERT(__StackLimit >= __heap_end, "region ram overflowed with stack")
+
+	 /* The .eh_frame section appears to be used for C++ exception handling.
+	 * You may need to fix this if you're using C++.
+	 */
+	/*/DISCARD/ : { *(.eh_frame) }*/
+
+	. = ALIGN(4);
+	end = .;
 }
+
+/*PROVIDE(_stack = ORIGIN(ram) + LENGTH(ram));*/
+

@@ -4,13 +4,11 @@
 /*  for newlib                                                         */
 /*                                                                     */
 /***********************************************************************/
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <string.h>
 #include "OSandPlatform.h"
+#include <sys/stat.h>
 
 #define EOF (-1)
-
+extern usbd_device *CDCACM_dev;
 int Board_UARTGetChar(void);
 void Board_UARTPutChar(char ch);
 void Board_UARTPutSTR(char *str);
@@ -46,7 +44,6 @@ void *_sbrk_r(struct _reent *_s_r
     //errno=ENOMEM;
     return ((void *) -1);	/* Failure out of mem, We should set errno to ENOMEM, too */
   }
-
   heap_ptr = new_heap_ptr;	/*  Increase heap.                              */
 
   return base;			/*  Return pointer to start of new heap area.   */
@@ -103,6 +100,7 @@ int _open(const char *name __attribute__ ((unused)), int flags
   return -1;
 }
 
+// Emulate a debug uart with CDCACM usb device
 
 extern xQueueHandle UARTinQ;
 
@@ -131,45 +129,89 @@ int _read(int file __attribute__ ((unused)), char *ptr, int len)
   return todo;
 }
 
+// Simple ring buffer for _write to use when there's no place
+// to put the outgoing string ...
+#define BUFFER_SIZE 64
+static struct ringBuffer {
+  char buffer[BUFFER_SIZE];
+  uint32_t rPtr;
+  uint32_t wPtr;
+  uint32_t size;
+} ringBuffer = { .rPtr=0, .wPtr=0, .size=0 };
+
+static void enq(char *ptr, int len)
+{
+  for (int k=0; k<len; k++) {
+    ringBuffer.buffer[ringBuffer.wPtr]=*(ptr + k);
+    ringBuffer.wPtr = (ringBuffer.wPtr + 1) % BUFFER_SIZE;
+    ringBuffer.size = (ringBuffer.size + 1) % BUFFER_SIZE;
+  }
+}
+
+static int sendPacket(void)
+{
+  int rval=0;
+  rval = usbd_ep_write_packet(CDCACM_dev, 0x82,
+                              ringBuffer.buffer + ringBuffer.rPtr,
+                              ringBuffer.size);
+  if (rval != 0 ) { //Then the packet went out ...
+    ringBuffer.rPtr=0;
+    ringBuffer.wPtr=0;
+    ringBuffer.size=0;
+  }
+  return(rval);
+}
+
+//Write to CDCACM device ...
 int _write(int file __attribute__ ((unused)), char *ptr, int len)
 {
   int todo;
-
-  //  Chip_UART_Send(DEBUG_UART, ptr, len, BLOCKING);
-  //  return len;
-  for (todo = 0; todo < len; todo++) {
-    if (*(ptr + todo) == '\n') {	// ONLCR output line discipline
-      Board_UARTPutChar('\r');
+  
+  //Our max packet size is 64 bytes. We'll chunk into 64 byte pieces
+  //and send it out.
+  
+  if ( file == 0) { //stdout
+    for (todo = 0; todo < len; todo++) {
+      if (*(ptr + todo) == '\n') {	// ONLCR output line discipline
+        enq("\r",1);
+        if (ringBuffer.size==64) { //Did we just fill a packet??
+          sendPacket();
+        }
+      }
+      enq((ptr+todo),1);
+      if (ringBuffer.size==64) { //Did we just fill a packet??
+        sendPacket();
+      }
     }
-    Board_UARTPutChar(*(ptr + todo));
+    //Final partial-full write
+    sendPacket();
+    return len; //We wrote it all
   }
-  return len;
+
+  return 0;
 }
 
 
 /* Gets a character from the UART, returns EOF if no character is ready */
 int Board_UARTGetChar(void)
 {
-  //uint8_t data;
-  
-  //if (Chip_UART_ReceiveByte(DEBUG_UART, &data) == SUCCESS) {
-  //    return (int) data;
-  // }
-  return EOF;
+  char inch;
+  portBASE_TYPE rval;
+  if (uxQueueMessagesWaiting(UARTinQ)) {
+    rval = xQueueReceive(UARTinQ,(void *)&inch,0);
+    if (rval == pdPASS) return(inch);
+    if (rval == errQUEUE_EMPTY) return(EOF);
+  }
+  return(EOF);
 }
 
-/* Sends a character on the UART */
-void Board_UARTPutChar(char ch)
+void Board_UARTPutChar(char val)
 {
-
-  ch++;
-  //while (Chip_UART_SendByte(DEBUG_UART, (uint8_t) ch) == ERROR) {}
+  _write(0, &val, 1);
 }
 
 /* Outputs a string on the debug UART */
 void Board_UARTPutSTR(char *str)
 {
-  while (*str != '\0') {
-    Board_UARTPutChar(*str++);
-  }
+  _write(0, str, strlen(str));
 }

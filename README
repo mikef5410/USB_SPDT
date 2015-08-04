@@ -1,1 +1,3 @@
-Control attenuators and switches via USB with the aid of an STM32F411
+
+Demo/Starting Point for FreeRTOS on STM32F4-Discovery Board using
+libopencm3.

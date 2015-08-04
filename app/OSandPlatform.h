@@ -24,21 +24,34 @@ extern "C" {
 #include <task.h>
 #include <queue.h>
 #include <semphr.h>
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpointer-sign"
-#include <timers.h>
-#pragma GCC diagnostic pop
+
+//#pragma GCC diagnostic push
+//#pragma GCC diagnostic ignored "-Wpointer-sign"
+//#pragma GCC diagnostic pop
 
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
 #include <stdint.h>
 #include <strings.h>
 #include <limits.h>
+#include <malloc.h>
 
 
+#include <libopencmsis/core_cm3.h>
+#include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/rcc.h>
+#include <libopencm3/cm3/scb.h>
+#include <libopencm3/cm3/systick.h>
+#include <libopencm3/cm3/nvic.h>
+#include <libopencm3/usb/usbd.h>
+#include <libopencm3/stm32/flash.h>
+
+#include "hiresTimer.h"
+  
 //#define CEXCEPTION_USE_CONFIG_FILE
 //#include "CException.h"
 
@@ -63,8 +76,8 @@ extern "C" {
 #define unlikely(x)     __builtin_expect((x),0)
 
 //Trigger a HARD FAULT by writing to a FLASH ROM location
-//#define TRIG_HARDFAULT *((volatile int*)(0x14017644))=0
-
+#define TRIG_HARDFAULT *((volatile int*)(0x8000000))=0
+    
 //We'll define this later
     typedef void BaseSequentialStream;
 
@@ -75,6 +88,8 @@ extern "C" {
     extern int mysprintf(char *out, const char *format, ...);
     extern int mysnprintf(char *buf, unsigned int count,
 			  const char *format, ...);
+
+#define ENABLE_DEBUG_TASK 1
 
 #ifdef RELEASE
 #define DPRINTF(...)
