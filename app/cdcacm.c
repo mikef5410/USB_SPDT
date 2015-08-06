@@ -245,6 +245,7 @@ void otg_fs_isr(void)
   portEND_SWITCHING_ISR( HPTw );
 }
 
+extern const struct _usbd_driver stm32f411_usb_driver;
 
 portTASK_FUNCTION(vUSBCDCACMTask, pvParameters)
 {
@@ -253,7 +254,7 @@ portTASK_FUNCTION(vUSBCDCACMTask, pvParameters)
 
   UARTinQ = xQueueCreate( 256, sizeof(char));
         
-  usbd_dev = usbd_init(&otgfs_usb_driver, &dev, &config,
+  usbd_dev = usbd_init(&stm32f411_usb_driver, &dev, &config,
                        usb_strings, 3,
                        usbd_control_buffer, sizeof(usbd_control_buffer));
 

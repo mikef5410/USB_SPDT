@@ -9,3 +9,7 @@ cp ${freertos}/Source/* FreeRTOS/Source
 cp -R ${freertos}/Source/include FreeRTOS/Source
 cp -R ${freertos}/Source/portable/GCC/ARM_CM* FreeRTOS/Source/portable/GCC
 cp -R ${freertos}/Source/portable/MemMang FreeRTOS/Source/portable
+
+cd app
+ln -s ../external/libopencm3/lib/usb/usb_fx07_common.h .
+ln -s ../external/libopencm3/lib/usb/usb_private.h .
