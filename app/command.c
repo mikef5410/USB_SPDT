@@ -51,6 +51,24 @@ static int cmd_timer(int argc, char **argv)
   return(0);
 }
 
+extern void hvOn(int on);
+static int cmd_hv(int argc, char **argv)
+{
+  uint16_t val=0;
+  if (argc == 1) {
+    val=gpio_get(GPIOD,GPIO2);
+    myprintf("HV is %s\n",val?"ON":"OFF");
+    return(0);
+  }
+  if (argc == 2) {
+    val = (uint16_t)strtoul(argv[1],NULL,0);
+    hvOn(val!=0);
+    return(0);
+  }
+  myprintf("usage: hv 1|0 \n");
+  return(1);
+}
+
 
 dispatchEntry mainCommands[] = {
 //Context, Command,        ShortHelp,                                          command proc,  help proc
@@ -62,6 +80,7 @@ dispatchEntry mainCommands[] = {
 #endif
   {"","hardfault",        "                      Cause a hard fault", cmd_hardfault, NULL},
   {"","timer",            "                      Test the hires timer", cmd_timer, NULL},
+  {"","hv",               "                      Turn high voltage on/off", cmd_hv, NULL},
     //LAST ENTRY
   {NULL, NULL, NULL, NULL, NULL}
 };

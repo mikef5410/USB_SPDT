@@ -22,6 +22,7 @@
 #include <libopencm3/stm32/f4/nvic.h>
 #include <libopencm3/usb/cdc.h>
 
+
 xQueueHandle UARTinQ;
 usbd_device *CDCACM_dev;
 static xSemaphoreHandle usbInterrupted = NULL;
@@ -221,6 +222,7 @@ static void cdcacm_set_config(usbd_device *usbd_dev, uint16_t wValue)
 {
   (void)wValue;
 
+  
   usbd_ep_setup(usbd_dev, 0x01, USB_ENDPOINT_ATTR_BULK, 64,
                 cdcacm_data_rx_cb);
   usbd_ep_setup(usbd_dev, 0x82, USB_ENDPOINT_ATTR_BULK, 64, NULL);

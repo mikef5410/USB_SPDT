@@ -72,6 +72,10 @@ $(PROG).bin: $(PROG).elf
 download: $(PROG).bin
 	st-flash --reset write $(PROG).bin 0x08000000
 
+DFU: $(PROG).bin
+	dfu-suffix -a $(PROG).bin
+	dfu-util  -D $(PROG).bin -R -d 0483:df11 -a0 -s 0x08000000
+
 
 include mk/tags.mk
 

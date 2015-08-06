@@ -13,6 +13,8 @@ xTaskHandle *xDebugShellTaskHandle;
 
 extern void Board_UARTPutSTR(const char *str);
 
+void greenOn(int on);
+void redOn(int on);
 void Delay(volatile uint32_t nCount);
 
 extern portTASK_FUNCTION(vUSBCDCACMTask, pvParameters); //in cdcacm.c
@@ -24,9 +26,9 @@ static portTASK_FUNCTION(vLEDTask1, pvParameters)
   while(1) {
     cnt++;
     vTaskDelay(300/portTICK_RATE_MS);
-    gpio_set(GPIOD, GPIO12);
+    greenOn(1);
     vTaskDelay(20/portTICK_RATE_MS);
-    gpio_clear(GPIOD, GPIO12);
+    greenOn(0);
   }
 }
 
@@ -36,118 +38,115 @@ static portTASK_FUNCTION(vLEDTask2, pvParameters)
   (void)(pvParameters);//unused params
   while(1) {
     vTaskDelay(500/portTICK_RATE_MS);
-    gpio_set(GPIOD, GPIO12);
+    greenOn(1);
     vTaskDelay(30/portTICK_RATE_MS);
-    gpio_clear(GPIOD, GPIO12);
+    greenOn(0);
   }
 }
 
 void greenOn(int on)
 {
   if (on) {
-    gpio_set(GPIOD,GPIO12);
+    gpio_set(GPIOB,GPIO0);
   } else {
-    gpio_clear(GPIOD,GPIO12);
+    gpio_clear(GPIOB,GPIO0);
   }
   return;
 }
 
-void orangeOn(int on)
-{
-  if (on) {
-    gpio_set(GPIOD,GPIO13);
-  } else {
-    gpio_clear(GPIOD,GPIO13);
-  }
-  return;
-}
 
 void redOn(int on)
 {
   if (on) {
-    gpio_set(GPIOD,GPIO14);
+    gpio_set(GPIOA,GPIO0);
   } else {
-    gpio_clear(GPIOD,GPIO14);
+    gpio_clear(GPIOA,GPIO0);
   }
   return;
 }
 
-void blueOn(int on)
+void hvOn(int on)
 {
-  if (on) {
-    gpio_set(GPIOD,GPIO15);
-  } else {
-    gpio_clear(GPIOD,GPIO15);
-  }
-  return;
+  if (on) gpio_set(GPIOD,GPIO2);
+  else gpio_clear(GPIOD,GPIO2);
 }
+           
 
-#define TEST96
-#ifdef TEST96
-const clock_scale_t testClock = {
-  //96 MHz, 8MHz crystal
-  .pllm = 2,
-  .plln = 48,
-  .pllp = 2,
-  .pllq = 4, 
-  .hpre = RCC_CFGR_HPRE_DIV_NONE,
-  .ppre1 = RCC_CFGR_PPRE_DIV_4,
+const clock_scale_t clock32F411 = {
+  //96 MHz, 16MHz crystal
+  .pllm = 16, //1MHz reference
+  .plln = 192, // 192MHz VCO
+  .pllp = 2, // 96 MHz core clock
+  .pllq = 4, // 48 MHz USB clock
+  .hpre = RCC_CFGR_HPRE_DIV_NONE, // 96MHz AHB
+  .ppre1 = RCC_CFGR_PPRE_DIV_2,  
   .ppre2 = RCC_CFGR_PPRE_DIV_2,
   .flash_config = FLASH_ACR_ICE | FLASH_ACR_DCE |
   FLASH_ACR_LATENCY_3WS,
-  .apb1_frequency = 24000000,
+  .apb1_frequency = 48000000,
   .apb2_frequency = 48000000,
 };
-#endif
+
 
 int main(void)
 {
   portBASE_TYPE qStatus = pdPASS;   // = 1, this, and pdFAIL = 0, are in projdefs.h
-  //Blue pushbutton (B1) is PA0
-  //Black pushbutton (B2) is NRST
-  /* Configure LEDs ... PD12, PD13, PD14 and PD15 in output pushpull mode */
-  //PD12 - Green
-  //PD13 - Orange
-  //PD14 - Red
-  //PD15 - Blue
 
   // Now setup the clocks ...
-#ifndef TEST96  
-  // Discovery is 8MHz crystal, use 120MHz core
-  rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_120MHZ]);
-  SystemCoreClock = 120000000;
-#else
   // Use 96MHz core
-  rcc_clock_setup_hse_3v3(&testClock);
+  rcc_clock_setup_hse_3v3(&clock32F411);
   SystemCoreClock = 96000000;
-#endif
+
+  // Setup GPIOs
+  rcc_periph_clock_enable(RCC_GPIOA);
+  rcc_periph_clock_enable(RCC_GPIOB);
+  rcc_periph_clock_enable(RCC_GPIOC);
+  rcc_periph_clock_enable(RCC_GPIOD);
 
   // Setup USBOTG Clocking and pins
-  rcc_periph_clock_enable(RCC_GPIOA);
   rcc_periph_clock_enable(RCC_OTGFS);
-  
   gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE,
                   GPIO9 | GPIO11 | GPIO12);
   gpio_set_af(GPIOA, GPIO_AF10, GPIO9 | GPIO11 | GPIO12);
   
-  
-  // Setup GPIO D for LEDs
-  rcc_periph_clock_enable(RCC_GPIOD);
-  rcc_periph_clock_enable(RCC_GPIOC);
-  gpio_mode_setup(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO12|GPIO13|GPIO14|GPIO15);
-  gpio_set_output_options(GPIOD, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, GPIO12|GPIO13|GPIO14|GPIO15);
-  gpio_set(GPIOD, GPIO12|GPIO13|GPIO14|GPIO15);
-  Delay(0x8FFFFF);
-  gpio_clear(GPIOD, GPIO12|GPIO13|GPIO14|GPIO15);
 
-  // 'Scope probe on GPIOC-7
-  gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO7);
-  gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, GPIO7);
+  //Red LED
+  gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0);
+  gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, GPIO0);
+  gpio_clear(GPIOA,GPIO0);
+  
+  //Grn LED
+  gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0);
+  gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, GPIO0);
+  gpio_clear(GPIOB,GPIO0);
+  
+  //Control IOs
+  gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0|GPIO1|
+                  GPIO2|GPIO3|GPIO4|GPIO5|GPIO6|GPIO7|GPIO8|
+                  GPIO9|GPIO10|GPIO11|GPIO12);
+  gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, GPIO0|GPIO1|
+                  GPIO2|GPIO3|GPIO4|GPIO5|GPIO6|GPIO7|GPIO8|
+                  GPIO9|GPIO10|GPIO11|GPIO12);
+  gpio_clear(GPIOC, GPIO0|GPIO1|
+                  GPIO2|GPIO3|GPIO4|GPIO5|GPIO6|GPIO7|GPIO8|
+                  GPIO9|GPIO10|GPIO11|GPIO12);
+  
+  //HV Enable
+  gpio_mode_setup(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO2);
+  gpio_set_output_options(GPIOD, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, GPIO2);
+  gpio_clear(GPIOD, GPIO2);
+
+
+
+  gpio_set(GPIOA, GPIO0);
+  gpio_set(GPIOB, GPIO0);
+  Delay(0x8FFFFF);
+  gpio_clear(GPIOA, GPIO0);
+  gpio_clear(GPIOB, GPIO0);
+
 
   init_hiresTimer();
   
-  
-#if 1
   //Fixup NVIC for FreeRTOS ...
   const uint32_t interrupt_priority_group4 = (0x3 << 8); // 15 priority interrupts, no sub-priorities
   scb_set_priority_grouping(interrupt_priority_group4);
@@ -160,8 +159,8 @@ int main(void)
   nvic_set_priority(-11,0); //SVCall
   nvic_set_priority(-14,0); //PendSV
   nvic_set_priority(-15,0); //SysTick
-  
-#endif  
+
+
   // Create tasks
   // remember, stack size is in 32-bit words and is allocated from the heap ...
   qStatus = xTaskCreate(vLEDTask1, "LED Task 1", 64, NULL, (tskIDLE_PRIORITY + 1UL),
