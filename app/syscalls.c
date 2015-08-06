@@ -171,16 +171,19 @@ int _write(int file __attribute__ ((unused)), char *ptr, int len)
   //and send it out.
   
   if ( file == 0) { //stdout
+    while(ringBuffer.size==64) {
+      if (sendPacket() == 0) delayms(2);
+    }
     for (todo = 0; todo < len; todo++) {
       if (*(ptr + todo) == '\n') {	// ONLCR output line discipline
         enq("\r",1);
-        if (ringBuffer.size==64) { //Did we just fill a packet??
-          sendPacket();
+        while (ringBuffer.size==64) { //Did we just fill a packet??
+          if (sendPacket()==0) delayms(2);
         }
       }
       enq((ptr+todo),1);
-      if (ringBuffer.size==64) { //Did we just fill a packet??
-        sendPacket();
+      while (ringBuffer.size==64) { //Did we just fill a packet??
+        if (sendPacket()==0) delayms(2);
       }
     }
     //Final partial-full write
