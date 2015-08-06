@@ -53,8 +53,12 @@ void redOn(int on)
 
 void hvOn(int on)
 {
-  if (on) gpio_set(GPIOD,GPIO2);
-  else gpio_clear(GPIOD,GPIO2);
+  if (on) {
+    gpio_set(GPIOD,GPIO2);
+    delayms(40); //Power-up time is about 40ms
+  }  else {
+    gpio_clear(GPIOD,GPIO2);
+  }
 }
 
 

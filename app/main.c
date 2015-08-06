@@ -141,8 +141,6 @@ void vApplicationTickHook(void)
 
 void _exit(int status __attribute__(( unused )) )
 {
-  gpio_set(GPIOD, GPIO14);
-  
   //TRIG_HARDFAULT;
   while (1) ;
 }

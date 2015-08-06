@@ -50,7 +50,7 @@ $(OBJS_DIR):
 # Primary Target (Application) Build
 ##############
 
-APP_SRCS = main.c bsp.c syscalls.c printf-stdarg.c cdcacm.c debug_shell.c command.c hiresTimer.c usb_f411.c atten.c
+APP_SRCS = main.c bsp.c syscalls.c printf-stdarg.c cdcacm.c debug_shell.c command.c hiresTimer.c usb_f411.c atten.c fault_handler.c
 
 APP_LIBS = libFreeRTOS.a $(LIBOPENCM3_LIBNAME)
 APP_INCLUDE = $(FREERTOS_INC) $(LIBOPENCM3_INC)
@@ -73,7 +73,7 @@ download: $(PROG).bin
 	st-flash --reset write $(PROG).bin 0x08000000
 
 DFU: $(PROG).bin
-	dfu-suffix -a $(PROG).bin
+	dfu-suffix -c $(PROG).bin || dfu-suffix -a $(PROG).bin
 	dfu-util  -D $(PROG).bin -R -d 0483:df11 -a0 -s 0x08000000
 
 

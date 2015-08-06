@@ -16,10 +16,11 @@
 
 #include "OSandPlatform.h"
 
+#define ATTEN_DLY 750
+
 void s1(int up) {
 
   hvOn(1);
-  delayms(20);
 
   if (up) {
     gpio_clear(S1D);
@@ -29,7 +30,7 @@ void s1(int up) {
     gpio_set(S1D);
   }
 
-  delayms(50);
+  delayms(ATTEN_DLY);
   gpio_clear(S1U);
   gpio_clear(S1D);
 }
@@ -37,7 +38,6 @@ void s1(int up) {
 void s2(int up) {
 
   hvOn(1);
-  delayms(20);
 
   if (up) {
     gpio_clear(S2D);
@@ -47,7 +47,7 @@ void s2(int up) {
     gpio_set(S2D);
   }
 
-  delayms(50);
+  delayms(ATTEN_DLY);
   gpio_clear(S2U);
   gpio_clear(S2D);
 }
@@ -55,7 +55,6 @@ void s2(int up) {
 void s3(int up) {
 
   hvOn(1);
-  delayms(20);
 
   if (up) {
     gpio_clear(S3D);
@@ -65,15 +64,13 @@ void s3(int up) {
     gpio_set(S3D);
   }
 
-  delayms(50);
+  delayms(ATTEN_DLY);
   gpio_clear(S3U);
   gpio_clear(S3D);
 }
 
 void s4(int up) {
-
   hvOn(1);
-  delayms(20);
 
   if (up) {
     gpio_clear(S4D);
@@ -83,7 +80,7 @@ void s4(int up) {
     gpio_set(S4D);
   }
 
-  delayms(50);
+  delayms(ATTEN_DLY);
   gpio_clear(S4U);
   gpio_clear(S4D);
 }
