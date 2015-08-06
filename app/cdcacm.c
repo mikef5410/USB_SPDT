@@ -35,8 +35,8 @@ static const struct usb_device_descriptor dev = {
   .bDeviceSubClass = 0,
   .bDeviceProtocol = 0,
   .bMaxPacketSize0 = 64,
-  .idVendor = 0x0483,
-  .idProduct = 0x5740,
+  .idVendor = 0x4161,
+  .idProduct = 0x0001,
   .bcdDevice = 0x0200,
   .iManufacturer = 1,
   .iProduct = 2,
@@ -161,9 +161,9 @@ static const struct usb_config_descriptor config = {
 };
 
 static const char * usb_strings[] = {
-  "Black Sphere Technologies",
-  "CDC-ACM Demo",
-  "DEMO",
+  "MF",
+  "USB Switch/Attenuator",
+  NULL,
 };
 
 /* Buffer to be used for control requests. */
@@ -250,10 +250,15 @@ extern const struct _usbd_driver stm32f411_usb_driver;
 portTASK_FUNCTION(vUSBCDCACMTask, pvParameters)
 {
   usbd_device *usbd_dev;
+  char id[24];
+  
   (void)(pvParameters);//unused params
 
   UARTinQ = xQueueCreate( 256, sizeof(char));
-        
+
+  desig_get_unique_id_as_string(id,24); //Copy device SN to USB reported SN
+  usb_strings[2]=id;       
+
   usbd_dev = usbd_init(&stm32f411_usb_driver, &dev, &config,
                        usb_strings, 3,
                        usbd_control_buffer, sizeof(usbd_control_buffer));

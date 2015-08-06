@@ -329,7 +329,11 @@ int cmd_reboot(int argc, char **argv)
 
 int cmd_identify(int argc, char **argv)
 {
-  myprintf("STM32F4Discovery running FreeRTOS\n");
+  char id[24];
+
+  desig_get_unique_id_as_string(id, 24);
+  myprintf("USB Attenuator/Switch Controller\n");
+  myprintf("SN: %s\n",id);
   return(0);
 }
 
