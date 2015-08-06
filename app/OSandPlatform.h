@@ -53,6 +53,7 @@ extern "C" {
 
 #include "bsp.h"  
 #include "hiresTimer.h"
+#include "atten.h"
   
 //#define CEXCEPTION_USE_CONFIG_FILE
 //#include "CException.h"
