@@ -91,6 +91,30 @@ static int cmd_sw(int argc, char **argv)
   return(0);
 }
 
+static int cmd_aux(int argc, char **argv)
+{
+  uint32_t switchN = 0;
+  uint32_t val = 0;
+
+  if (argc == 3) {
+    switchN = strtoul(argv[1],NULL,0);
+    val = strtoul(argv[2],NULL,0);
+    switch(switchN) {
+    case 0: aux0(val); break;
+    case 1: aux1(val); break;
+    case 2: aux2(val); break;
+    case 3: aux3(val); break;
+    case 4: aux4(val); break;
+    default: myprintf("Aux can be 0,1,2,3,or 4\n");
+      return(1);
+    }
+  } else {
+    myprintf("Usage: aux <switch number> 1|0\n");
+    return(1);
+  }
+  return(0);
+}
+
 dispatchEntry mainCommands[] = {
 //Context, Command,        ShortHelp,                                          command proc,  help proc
 #ifdef BUILD_INFO
@@ -103,6 +127,7 @@ dispatchEntry mainCommands[] = {
   {"","timer",            "                      Test the hires timer", cmd_timer, NULL},
   {"","hv",               "                      Turn high voltage on/off", cmd_hv, NULL},
   {"","sw",               " sw switchnum 1|0     turn switch/step on/off", cmd_sw, NULL},
+  {"","aux",              " aux auxnum 1|0       turn aux bit on/off", cmd_aux, NULL},
     //LAST ENTRY
   {NULL, NULL, NULL, NULL, NULL}
 };
