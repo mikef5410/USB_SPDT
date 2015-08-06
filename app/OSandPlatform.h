@@ -50,6 +50,7 @@ extern "C" {
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/stm32/flash.h>
 
+#include "bsp.h"  
 #include "hiresTimer.h"
   
 //#define CEXCEPTION_USE_CONFIG_FILE
