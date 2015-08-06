@@ -34,8 +34,8 @@ uint64_t hiresTimer_getTime(void)
   volatile uint32_t current = timer_get_counter(HIRES_TIMER);
 
   if (current < hiresTimer_lastReading) {//Rollover?
-    uint32_t new = __sync_fetch_and_add(&hiresTimer_upperWord,1);
-    while (!__sync_bool_compare_and_swap(&hiresTimer_upperWord,NULL,new)) {;}
+    uint32_t new = __atomic_fetch_add(&hiresTimer_upperWord,1, __ATOMIC_SEQ_CST);
+    __atomic_store(&hiresTimer_upperWord,&new, __ATOMIC_SEQ_CST);
   }
 
   hiresTimer_lastReading=current;

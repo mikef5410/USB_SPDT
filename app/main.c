@@ -40,7 +40,6 @@ int main(void)
 {
   portBASE_TYPE qStatus = pdPASS;   // = 1, this, and pdFAIL = 0, are in projdefs.h
 
-
   // Now setup the clocks ...
   setupClocks();
   
@@ -48,12 +47,9 @@ int main(void)
   setupGPIOs();
 
 
-  gpio_set(GPIOA, GPIO0);
-  gpio_set(GPIOB, GPIO0);
+  redOn(1); greenOn(1);
   Delay(0x8FFFFF);
-  gpio_clear(GPIOA, GPIO0);
-  gpio_clear(GPIOB, GPIO0);
-
+  redOn(0); greenOn(0);
 
   init_hiresTimer();
   
