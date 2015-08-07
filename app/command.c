@@ -173,10 +173,10 @@ dispatchEntry mainCommands[] = {
 #endif
   {"","hardfault",        "                      Cause a hard fault", cmd_hardfault, NULL},
   {"","timer",            "                      Test the hires timer", cmd_timer, NULL},
-  {"","hv",               "                      Turn high voltage on/off", cmd_hv, NULL},
-  {"","sw",               " sw switchnum 1|0     turn switch/step on/off", cmd_sw, NULL},
-  {"","aux",              " aux auxnum 1|0       turn aux bit on/off", cmd_aux, NULL},
-  {"","buzz",             " buzz switchnum n     turn switch on/off n times", cmd_buzz, NULL},
+  {"","hv",               "[1|0]                 Turn high voltage on/off", cmd_hv, NULL},
+  {"","sw",               "switchnum 1|0         Turn switch/step on/off", cmd_sw, NULL},
+  {"","aux",              "auxnum 1|0            Turn aux bit on/off", cmd_aux, NULL},
+  {"","buzz",             "switchnum n           Turn switch on/off n times", cmd_buzz, NULL},
     //LAST ENTRY
   {NULL, NULL, NULL, NULL, NULL}
 };
