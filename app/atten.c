@@ -16,12 +16,14 @@
 
 #include "OSandPlatform.h"
 
-#define ATTEN_DLY 750
+// 30ms is enough to switch the attenuator
+#define ATTEN_DLY 30
 
 void s1(int up) {
 
-  hvOn(1);
-
+  hvOn(1);//Charge up the output cap
+  hvOn(0);//Supply stays charged up enough to switch the attenuator
+  
   if (up) {
     gpio_clear(S1D);
     gpio_set(S1U);
@@ -38,6 +40,7 @@ void s1(int up) {
 void s2(int up) {
 
   hvOn(1);
+  hvOn(0);
 
   if (up) {
     gpio_clear(S2D);
@@ -55,6 +58,7 @@ void s2(int up) {
 void s3(int up) {
 
   hvOn(1);
+  hvOn(0);
 
   if (up) {
     gpio_clear(S3D);
@@ -71,7 +75,8 @@ void s3(int up) {
 
 void s4(int up) {
   hvOn(1);
-
+  hvOn(0); 
+  
   if (up) {
     gpio_clear(S4D);
     gpio_set(S4U);

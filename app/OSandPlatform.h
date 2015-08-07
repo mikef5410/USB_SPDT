@@ -59,11 +59,12 @@ extern "C" {
 //#include "CException.h"
 
 #ifdef __cplusplus
-  extern "C" {
+extern "C" {
 #endif
 
 //Chip driver status return values
-    typedef int32_t ChipDriverStatus_t;
+typedef int32_t ChipDriverStatus_t;
+
 #define SUCCESS 0
 #define FAILURE 1
 #define DO_NOT_TX -1
@@ -111,23 +112,24 @@ extern "C" {
     MSleep(x); \
   }  } while(0)
 
-#ifdef __cplusplus
-  }
-#endif
-  typedef struct task_info {
-    uint32_t ExceptionTaskID;
-  } task_info_t;
 
-  OSandPlatformGLOBAL uint32_t numRegisteredTasks;	//main.c
+  
+typedef struct task_info {
+  uint32_t ExceptionTaskID;
+} task_info_t;
+    
+OSandPlatformGLOBAL uint32_t numRegisteredTasks;	//main.c
 
 
-#ifdef __cplusplus
-}
-#endif
 extern char __StackTop;
 extern char __StackLimit;
 extern char __heap_start;
 extern char __heap_end;
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif				//OSandPlatform_INCLUDED
 
 /// @}

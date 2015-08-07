@@ -74,7 +74,7 @@ download: $(PROG).bin
 
 DFU: $(PROG).bin
 	dfu-suffix -c $(PROG).bin || dfu-suffix -a $(PROG).bin
-	dfu-util  -D $(PROG).bin -R -d 0483:df11 -a0 -s 0x08000000
+	dfu-util  -D $(PROG).bin -d 0483:df11 -a0 -s 0x08000000 && dfu-util -s 0x08000000 -e -E 3
 
 
 include mk/tags.mk

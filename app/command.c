@@ -115,6 +115,54 @@ static int cmd_aux(int argc, char **argv)
   return(0);
 }
 
+static int cmd_buzz(int argc, char **argv)
+{
+  uint32_t switchN = 0;
+  int n = 100000;
+  uint32_t on=0;
+  const uint32_t LDLY=5;
+  
+  switchN = strtoul(argv[1],NULL,0);
+  if (argc==3) {
+    n = strtoul(argv[2],NULL,0);
+  }
+  
+  switch(switchN) {
+  case 1:
+    for (int k=0; k<n; k++) {
+      on = !on;
+      s1(on);
+      delayms(LDLY);
+    }
+    break;
+  case 2:
+    for (int k=0; k<n; k++) {
+      on = !on;
+      s2(on);
+      delayms(LDLY);
+    }
+    break;
+  case 3:
+    for (int k=0; k<n; k++) {
+      on = !on;
+      s3(on);
+      delayms(LDLY);
+    }
+    break;
+  case 4:
+    for (int k=0; k<n; k++) {
+      on = !on;
+      s4(on);
+      delayms(LDLY);
+    }
+    break;
+  default:
+    myprintf("Bad args.\n");
+    return(1);
+  }
+  return(0);
+}
+
 dispatchEntry mainCommands[] = {
 //Context, Command,        ShortHelp,                                          command proc,  help proc
 #ifdef BUILD_INFO
@@ -128,6 +176,7 @@ dispatchEntry mainCommands[] = {
   {"","hv",               "                      Turn high voltage on/off", cmd_hv, NULL},
   {"","sw",               " sw switchnum 1|0     turn switch/step on/off", cmd_sw, NULL},
   {"","aux",              " aux auxnum 1|0       turn aux bit on/off", cmd_aux, NULL},
+  {"","buzz",             " buzz switchnum n     turn switch on/off n times", cmd_buzz, NULL},
     //LAST ENTRY
   {NULL, NULL, NULL, NULL, NULL}
 };
