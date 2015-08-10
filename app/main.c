@@ -66,7 +66,7 @@ int main(void)
                         (xTaskHandle *) &xLED2TaskHandle);
 
 
-  qStatus = xTaskCreate(vUSBCDCACMTask, "USB Serial Task", 64, NULL, (tskIDLE_PRIORITY + 1UL),
+  qStatus = xTaskCreate(vUSBCDCACMTask, "USB Serial Task", 256, NULL, (tskIDLE_PRIORITY + 1UL),
                         (xTaskHandle *) &xUSBCDCACMTaskHandle);
 
   qStatus = xTaskCreate(vDebugShell, "Debug shell", 1024, NULL, (tskIDLE_PRIORITY + 1UL),

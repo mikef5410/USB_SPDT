@@ -11,9 +11,14 @@ GIT_SERIAL:=$(shell git rev-list HEAD | wc -l)
 GIT_HASH:=$(shell git rev-list --abbrev-commit HEAD | head -1)
 GIT_HASH_FULL:=$(shell git rev-list HEAD | head -1)
 GIT_DIRTY:=$(shell if git diff-files --quiet --ignore-submodules --;then echo "clean";else echo "dirty";fi)
+GIT_DESC:=$(shell git describe --tags HEAD)
+
 ifeq (dirty, $(GIT_DIRTY))
-GIT_HASH:=+$(GIT_HASH)
+GIT_HASH:=$(GIT_HASH)+
+GIT_HASH_FULL:=$(GIT_HASH_FULL)+
+GIT_DESC:=$(GIT_DESC)+
 endif
+
 CHANGESET:=$(GIT_SERIAL)_$(GIT_HASH)
 
 BUILD_DATE:=$(shell date +%Y%m%d)
@@ -66,20 +71,22 @@ $(VFILE):	$(CSRC) $(CPPSRC)
 	@echo ""                                                                         >> $(VFILE)
 	@echo ""                                                                         >> $(VFILE)
 	@echo "#ifdef RELEASE"                                                           >> $(VFILE)
-	@echo "#define BUILD_INFO \"built $(BUILD_DATE) at $(BUILD_TIME), changeset $(CHANGESET) of branch $(BUILD_BRANCH), by $(USER) on $(HOSTNAME)\""  >> $(VFILE)
+	@echo "#define BUILD_INFO \"built $(BUILD_DATE) at $(BUILD_TIME), changeset $(CHANGESET) ($(GIT_DESC)) of branch $(BUILD_BRANCH), by $(USER) on $(HOSTNAME)\""  >> $(VFILE)
 	@echo "#define RELEASE_STATE \"RELEASE\""                                        >> $(VFILE)
 	@echo "#else"                                                                    >> $(VFILE)
-	@echo "#define BUILD_INFO \"DEBUG, built $(BUILD_DATE) at $(BUILD_TIME), changeset $(CHANGESET) of branch $(BUILD_BRANCH), by $(USER) on $(HOSTNAME)\""  >> $(VFILE)
+	@echo "#define BUILD_INFO \"DEBUG, built $(BUILD_DATE) at $(BUILD_TIME), changeset $(CHANGESET) ($(GIT_DESC)) of branch $(BUILD_BRANCH), by $(USER) on $(HOSTNAME)\""  >> $(VFILE)
 	@echo "#define RELEASE_STATE \"DEBUG\""                                          >> $(VFILE)
 	@echo "#endif      /* end RELEASE_STATE */"                                      >> $(VFILE)
 	@echo "#define BUILD_SHA1   \"$(CHANGESET)\""                                    >> $(VFILE)
 	@echo "#define FULL_SHA1    \"$(GIT_HASH_FULL)\""                                >> $(VFILE)
 	@echo "#define BUILD_BRANCH \"$(BUILD_BRANCH)\""                                 >> $(VFILE)
+	@echo "#define GIT_DESC \"$(GIT_DESC)\""                                         >> $(VFILE)
 	@echo "VERSIONGLOBAL const char build_info     [] VERSIONPRESET(BUILD_INFO);"    >> $(VFILE)
 	@echo "VERSIONGLOBAL const char build_sha1     [] VERSIONPRESET(BUILD_SHA1);"    >> $(VFILE)
 	@echo "VERSIONGLOBAL const char build_branch   [] VERSIONPRESET(BUILD_BRANCH);"  >> $(VFILE)
 	@echo "VERSIONGLOBAL const char build_rls_state[] VERSIONPRESET(RELEASE_STATE);" >> $(VFILE)
 	@echo "VERSIONGLOBAL const char build_sha1_full[] VERSIONPRESET(FULL_SHA1);"     >> $(VFILE)
+	@echo "VERSIONGLOBAL const char build_git_desc [] VERSIONPRESET(GIT_DESC);"      >> $(VFILE)
 	@echo "  "                                                                       >> $(VFILE)
 	@echo "#endif    // end _VERSION_INCLUDED"                                       >> $(VFILE)
 

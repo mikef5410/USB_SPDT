@@ -24,7 +24,7 @@ static int cmd_build_sha1(int argc, char **argv)
 {
   (void) argc;
   (void) argv;
-  myprintf("%s\r\n", build_sha1);
+  myprintf("%s, %s\r\n", build_sha1, build_sha1_full);
   return (0);
 }
 #endif
