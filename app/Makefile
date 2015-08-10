@@ -36,6 +36,7 @@ include mk/cross-tools.mk
 include mk/freertos.mk
 include mk/libopencm3.mk
 include mk/target.mk
+include mk/version.mk
 
 VPATH=.:./CException:$(RTOS_SOURCE_DIR):$(RTOS_SOURCE_DIR)/portable/MemMang
 VPATH+=:$(RTOS_SOURCE_DIR)/portable/$(FREERTOS_PORT)
@@ -54,7 +55,7 @@ APP_SRCS = main.c bsp.c syscalls.c printf-stdarg.c cdcacm.c debug_shell.c comman
 
 APP_LIBS = libFreeRTOS.a $(LIBOPENCM3_LIBNAME)
 APP_INCLUDE = $(FREERTOS_INC) $(LIBOPENCM3_INC)
-APP_OBJS = $(call CALC_OBJS,$(APP_SRCS))
+APP_OBJS = version.h $(call CALC_OBJS,$(APP_SRCS))
 
 
 $(PROG).elf : LDSCRIPT := standalone.ld

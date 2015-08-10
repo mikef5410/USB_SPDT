@@ -1,6 +1,9 @@
 #include "OSandPlatform.h"
 #include "debug_shell.h"
 
+#define GLOBAL_VERSION
+#include "version.h"
+
 #ifndef COUNTOF
 #define COUNTOF(A) (sizeof(A)/sizeof(A[0]))
 #endif
