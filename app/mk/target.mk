@@ -8,8 +8,8 @@ RAMK ?= 192
 
 # Which libc to use?
 #
-LIBC?=NEWLIB
-#LIBC:=NANO
+#LIBC?=NEWLIB
+LIBC?:=NANO
 #DEBUG_LIBC:=/projects/gcc-arm-none-eabi-4_7-2013q1-20130313/install-native/arm-none-eabi/lib/armv7e-m/libc.a
 # Switch FPU on/off based on which FreeRTOS port we use
 #
