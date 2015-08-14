@@ -82,7 +82,7 @@ include mk/tags.mk
 
 clean:: cleantags
 	rm -f $(OBJS) *.elf *.a *.map *.asm \#* *~ *.o *.elf *.bin *.hdr version.h
-	rm -f ../tools/version_print
+	rm -f ../tools/version_print *.gch
 	rm -rf build/
 	rm -f build_*
 

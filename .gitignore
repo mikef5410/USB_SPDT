@@ -5,6 +5,7 @@ app/usb_fx07_common.h
 app/usb_private.h
 *~
 \#*
+*.gch
 *.bin
 *.elf
 *.map
