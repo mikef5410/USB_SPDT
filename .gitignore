@@ -1,5 +1,10 @@
 FreeRTOS/
 app/APP.asm
+app/version.h
+app/usb_fx07_common.h
+app/usb_private.h
+*~
+\#*
 *.bin
 *.elf
 *.map
