@@ -1,0 +1,7 @@
+FreeRTOS/
+app/APP.asm
+*.bin
+*.elf
+*.map
+*.o
+*.a
