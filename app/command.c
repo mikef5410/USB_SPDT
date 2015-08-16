@@ -1,6 +1,8 @@
 #include "OSandPlatform.h"
 #include "debug_shell.h"
 
+#include "stacklight.h"
+
 #define GLOBAL_VERSION
 #include "version.h"
 
@@ -166,6 +168,28 @@ static int cmd_buzz(int argc, char **argv)
   return(0);
 }
 
+static int cmd_light(int argc, char **argv)
+{
+  if (argc != 3) {
+    myprintf("Usage: light R|Y|G 1|0\n");
+    return(1);
+  }
+  int onoff = strtoul(argv[2],NULL,0);
+
+  onoff = (onoff != 0);
+  
+  switch(toupper((int)*argv[1])) {
+  case 'R': stackRed(onoff); break;
+  case 'Y': stackYel(onoff); break;
+  case 'G': stackGrn(onoff); break;
+  default:
+    myprintf("Usage: light R|Y|G 1|0\n");
+    return(1);
+  }
+  return(0);
+  
+}
+
 dispatchEntry mainCommands[] = {
 //Context, Command,        ShortHelp,                                          command proc,  help proc
 #ifdef BUILD_INFO
@@ -180,6 +204,7 @@ dispatchEntry mainCommands[] = {
   {"","sw",               "switchnum 1|0         Turn switch/step on/off", cmd_sw, NULL},
   {"","aux",              "auxnum 1|0            Turn aux bit on/off", cmd_aux, NULL},
   {"","buzz",             "switchnum n           Turn switch on/off n times", cmd_buzz, NULL},
+  {"","light",            "light R|Y|G 1|0       Turn stacklight on/off", cmd_light, NULL},
     //LAST ENTRY
   {NULL, NULL, NULL, NULL, NULL}
 };
