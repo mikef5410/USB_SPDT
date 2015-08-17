@@ -40,7 +40,12 @@
 #define ON 1
 #define OFF 0
 
+#define R 1
+#define Y 2
+#define G 3
+
 STACKLIGHTGLOBAL void stackRed(int on);
 STACKLIGHTGLOBAL void stackYel(int on);
 STACKLIGHTGLOBAL void stackGrn(int on);
+STACKLIGHTGLOBAL uint32_t stackNotify(uint32_t col, uint32_t on, uint32_t off, uint32_t cnt);
 #endif				//_STACKLIGHT_INCLUDED

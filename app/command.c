@@ -190,6 +190,34 @@ static int cmd_light(int argc, char **argv)
   
 }
 
+// Arg0: command name
+// Arg1: color or off
+// Arg2: on_time
+// Arg3: off_time
+static int cmd_notify(int argc, char **argv)
+{
+  uint32_t on_time=0;
+  uint32_t off_time=0;
+  uint32_t count=0;
+  if (argc >= 5) {
+    count = strtoul(argv[4],NULL,0);
+  }
+  if (argc >= 4) {
+    off_time=strtoul(argv[3],NULL,0);
+  }
+  if (argc >= 3) {
+    on_time = strtoul(argv[2],NULL,0);
+  }
+  
+  switch(toupper((int)*argv[1])) {
+  case 'R': stackNotify(R,on_time,off_time,count); break;
+  case 'Y': stackNotify(Y,on_time,off_time,count); break;
+  case 'G': stackNotify(G,on_time,off_time,count); break;
+  default: stackNotify(OFF,0,0,0); break;
+  }
+  return(0);
+}
+
 dispatchEntry mainCommands[] = {
 //Context, Command,        ShortHelp,                                          command proc,  help proc
 #ifdef BUILD_INFO
@@ -205,6 +233,7 @@ dispatchEntry mainCommands[] = {
   {"","aux",              "auxnum 1|0            Turn aux bit on/off", cmd_aux, NULL},
   {"","buzz",             "switchnum n           Turn switch on/off n times", cmd_buzz, NULL},
   {"","light",            "light R|Y|G 1|0       Turn stacklight on/off", cmd_light, NULL},
+  {"","n",                "n R|Y|G|0 on_ms off_ms cnt Blink stacklight", cmd_notify, NULL},
     //LAST ENTRY
   {NULL, NULL, NULL, NULL, NULL}
 };

@@ -4,36 +4,28 @@
 #include "debug_shell.h"
 
 xTaskHandle *xLED1TaskHandle;
-xTaskHandle *xLED2TaskHandle;
+xTaskHandle *xStackTaskHandle;
 xTaskHandle *xUSBCDCACMTaskHandle;
 xTaskHandle *xDebugShellTaskHandle;
 
 extern portTASK_FUNCTION(vUSBCDCACMTask, pvParameters); //in cdcacm.c
+extern portTASK_FUNCTION(vStackTask, pvParamaters);
 
 static portTASK_FUNCTION(vLEDTask1, pvParameters)
 {
   (void)(pvParameters);//unused params
-  uint32_t cnt=0;
   while(1) {
-    cnt++;
-    vTaskDelay(300/portTICK_RATE_MS);
     greenOn(1);
-    vTaskDelay(20/portTICK_RATE_MS);
+    delayms(50);
     greenOn(0);
+    delayms(100);
+    greenOn(1);
+    delayms(50);
+    greenOn(0);
+    delayms(800);
   }
 }
 
-
-static portTASK_FUNCTION(vLEDTask2, pvParameters)
-{
-  (void)(pvParameters);//unused params
-  while(1) {
-    vTaskDelay(500/portTICK_RATE_MS);
-    greenOn(1);
-    vTaskDelay(30/portTICK_RATE_MS);
-    greenOn(0);
-  }
-}
 
 
 int main(void)
@@ -62,8 +54,8 @@ int main(void)
                         (xTaskHandle *) &xLED1TaskHandle);
 
 
-  qStatus = xTaskCreate(vLEDTask2, "LED Task 2", 64, NULL, (tskIDLE_PRIORITY + 1UL),
-                        (xTaskHandle *) &xLED2TaskHandle);
+  qStatus = xTaskCreate(vStackTask, "Stacklight", 64, NULL, (tskIDLE_PRIORITY + 1UL),
+                        (xTaskHandle *) &xStackTaskHandle);
 
 
   qStatus = xTaskCreate(vUSBCDCACMTask, "USB Serial Task", 256, NULL, (tskIDLE_PRIORITY + 1UL),
