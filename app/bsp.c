@@ -110,18 +110,7 @@ void setupGPIOs(void)
   gpio_set_output_options(GPIOD, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, GPIO2);
   gpio_clear(GPIOD, GPIO2);
 
-  //SPI2 pins for EEPROM (Alternate function 5)
-  //PB9 is SPI2NSS, PB10 is SPI2SCK
-  //PB14 is SPI2MISO, PB15 SPI2MOSI
-  //PCLK is 48MHz, so we need to select a baud rate divider
-  //such that SPI CLK is less than 2MHz (32 -> 1.5MHz)
-  gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE,
-                  GPIO9 | GPIO10 | GPIO14 | GPIO15);
-  gpio_set_af(GPIOB, GPIO_AF5, GPIO9 | GPIO10 | GPIO14 | GPIO15);
-  gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_25MHZ,
-                                 GPIO9 | GPIO10 | GPIO15);
-  rcc_periph_clock_enable(RCC_SPI2);
-  SPI_CR2(SPI5) |= SPI_CR2_SSOE;
+  eeprom9366_init();
   return;
 }
 

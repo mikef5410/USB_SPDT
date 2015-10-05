@@ -54,7 +54,7 @@ int main(void)
                         (xTaskHandle *) &xLED1TaskHandle);
 
 
-  qStatus = xTaskCreate(vStackTask, "Stacklight", 64, NULL, (tskIDLE_PRIORITY + 1UL),
+  qStatus = xTaskCreate(vStackTask, "Stacklight", 128, NULL, (tskIDLE_PRIORITY + 1UL),
                         (xTaskHandle *) &xStackTaskHandle);
 
 

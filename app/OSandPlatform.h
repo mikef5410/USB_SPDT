@@ -55,6 +55,8 @@ extern "C" {
 #include "bsp.h"  
 #include "hiresTimer.h"
 #include "atten.h"
+#define TESTEEPROM 1
+#include "eeprom9366.h"
   
 //#define CEXCEPTION_USE_CONFIG_FILE
 //#include "CException.h"

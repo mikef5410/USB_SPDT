@@ -218,6 +218,18 @@ static int cmd_notify(int argc, char **argv)
   return(0);
 }
 
+#ifdef TESTEEPROM
+static int cmd_testee(int argc, char **argv)
+{
+  (void) argc;
+  (void) argv;
+
+  eeprom9366_test();
+  return(0);
+}
+#endif
+
+
 dispatchEntry mainCommands[] = {
 //Context, Command,        ShortHelp,                                          command proc,  help proc
 #ifdef BUILD_INFO
@@ -234,7 +246,10 @@ dispatchEntry mainCommands[] = {
   {"","buzz",             "switchnum n           Turn switch on/off n times", cmd_buzz, NULL},
   {"","light",            "light R|Y|G 1|0       Turn stacklight on/off", cmd_light, NULL},
   {"","n",                "n R|Y|G|0 on_ms off_ms cnt Blink stacklight", cmd_notify, NULL},
-    //LAST ENTRY
+#ifdef TESTEEPROM
+  {"","testee",           "                      Test eeprom", cmd_testee, NULL},
+#endif
+  //LAST ENTRY
   {NULL, NULL, NULL, NULL, NULL}
 };
 
