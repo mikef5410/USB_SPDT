@@ -21,6 +21,7 @@ static uint32_t writeEnabled = 0;
 
 static inline void assertCS()
 {
+  taskENTER_CRITICAL();
   gpio_set(GPIOB,GPIO9);
   return;
 }
@@ -28,33 +29,23 @@ static inline void assertCS()
 static inline void deassertCS()
 {
   gpio_clear(GPIOB,GPIO9);
+  taskEXIT_CRITICAL();
   return;
 }
 
 static inline uint32_t spiTransaction(uint8_t command, uint8_t address, uint8_t data)
 {
-  uint8_t obyte;
-  uint8_t ibyte;
   uint8_t rbyte = 0;
 
   assertCS();
-  // Byte 1 ... 3 bits of command, 5 bits of address
-  obyte = ((command << 5)&0xe0) | ((address >> 3)&0x1f);
-  spi_send(SPI2,obyte);
-  (void) spi_read(SPI2);
+  // Byte 1 ... 3 bits of command
+  spi_send(SPI2,command);
 
-  // Byte 2 ... last 3 bits of address, 5 bits of data
-  obyte = (address<<5)&0xe0;
-  obyte |= ((data >> 3) & 0x1f);
-  spi_send(SPI2, obyte);
-  ibyte = spi_read(SPI2);
-  rbyte = (ibyte << 3) & 0xf8;
+  // Byte 2 ... 8 bits of address,
+  spi_send(SPI2, address);
 
-  //Byte 3 ... last 3 bits of data
-  obyte = (data << 5 ) & 0xe0;
-  spi_send(SPI2, obyte);
-  ibyte = spi_read(SPI2);
-  rbyte |= ((ibyte >> 5) & 0x7);
+  //Byte 3 ... data
+  rbyte = spi_xfer(SPI2, data);
 
   deassertCS();
   
@@ -63,19 +54,14 @@ static inline uint32_t spiTransaction(uint8_t command, uint8_t address, uint8_t 
 
 static inline void spiCMD(uint8_t command, uint8_t address)
 {
-  uint8_t obyte;
 
   assertCS();
   
-  // Byte 1 ... 3 bits of command, 5 bits of address
-  obyte = ((command << 5)&0xe0) | ((address >> 3)&0x1f);
-  spi_send(SPI2,obyte);
-  (void) spi_read(SPI2);
+  // Byte 1 ... 3 bits of command
+  spi_send(SPI2,command);
 
-  // Byte 2 ... last 3 bits of address, 5 bits of (zero) data
-  obyte = (address<<5)&0xe0;
-  spi_send(SPI2, obyte);
-  (void) spi_read(SPI2);
+  // Byte 2 ... 8 bits of address
+  spi_send(SPI2, address);
 
   deassertCS();
   return;
@@ -122,7 +108,7 @@ EEPROM9366GLOBAL uint8_t eeprom9366_read(uint8_t address)
 
 EEPROM9366GLOBAL void eeprom9366_init()
 {
-  uint32_t cr_tmp = 0;
+
   //SPI2 pins for EEPROM (Alternate function 5)
   //PB9 is SPI2NSS, PB10 is SPI2SCK
   //PB14 is SPI2MISO, PB15 SPI2MOSI
@@ -139,14 +125,20 @@ EEPROM9366GLOBAL void eeprom9366_init()
                                  GPIO10 | GPIO15);
   rcc_periph_clock_enable(RCC_SPI2);
 
-  SPI_CR1(SPI2) = 0;
-  cr_tmp = SPI_CR1_BAUDRATE_FPCLK_DIV_32 | SPI_CR1_MSTR | SPI_CR1_CPHA 
-     | SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE ;
+  spi_reset(SPI2);
+  spi_set_unidirectional_mode(SPI2);
+  spi_disable_crc(SPI2);
+  spi_set_next_tx_from_buffer(SPI2);
+  spi_set_full_duplex_mode(SPI2);
+  spi_send_msb_first(SPI2);
+  spi_set_baudrate_prescaler(SPI2,SPI_CR1_BAUDRATE_FPCLK_DIV_32);
+  spi_set_master_mode(SPI2);
+  spi_disable_tx_buffer_empty_interrupt(SPI2);
+  spi_disable_rx_buffer_not_empty_interrupt(SPI2);
+  spi_disable_error_interrupt(SPI2);
+  spi_set_standard_mode(SPI2,0);
 
-  SPI_CR1(SPI2) = cr_tmp;
-  cr_tmp |= SPI_CR1_SPE ;
-  SPI_CR1(SPI2) = cr_tmp;
-
+  spi_enable(SPI2);
   return;
 }
 
@@ -164,6 +156,7 @@ EEPROM9366GLOBAL void eeprom9366_test()
   d = eeprom9366_read(0x10);
   myprintf("EEPROM read after write (0xDE): 0x%x\n",d);
   eeprom9366_erase(0x10);
+ 
   d = eeprom9366_read(0x10);
   myprintf("EEPROM read after cell erase: 0x%x\n",d);
 
