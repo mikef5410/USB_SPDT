@@ -21,48 +21,58 @@ static uint32_t writeEnabled = 0;
 
 static inline void assertCS()
 {
-  taskENTER_CRITICAL();
+  //taskENTER_CRITICAL();
   gpio_set(GPIOB,GPIO9);
+  delayms(1); //Tcss
   return;
 }
 
 static inline void deassertCS()
 {
   gpio_clear(GPIOB,GPIO9);
-  taskEXIT_CRITICAL();
+  //taskEXIT_CRITICAL();
+  delayms(1); //Tcsl
   return;
 }
 
-static inline uint32_t spiTransaction(uint8_t command, uint8_t address, uint8_t data)
+static inline uint8_t spiTransaction(uint8_t command, uint8_t address, uint8_t data)
 {
   uint8_t rbyte = 0;
 
+  printf("OUT: 0x%02x, 0x%02x, 0x%02x\n",command, address, data);
   assertCS();
   // Byte 1 ... 3 bits of command
-  spi_send(SPI2,command);
+  (void)spi_send(SPI2,command);
 
   // Byte 2 ... 8 bits of address,
-  spi_send(SPI2, address);
+  (void)spi_send(SPI2, address);
+
+  // Wait for transfer 
+  while (!(SPI_SR(SPI2) & SPI_SR_TXE));
 
   //Byte 3 ... data
   rbyte = spi_xfer(SPI2, data);
 
   deassertCS();
-  
+  printf("IN: 0x%02x\n",rbyte);
   return(rbyte);
 }
 
 static inline void spiCMD(uint8_t command, uint8_t address)
 {
 
+  printf("OUT: 0x%02x, 0x%02x\n",command, address);
   assertCS();
   
   // Byte 1 ... 3 bits of command
-  spi_send(SPI2,command);
+  (void)spi_send(SPI2,command);
 
   // Byte 2 ... 8 bits of address
-  spi_send(SPI2, address);
+  (void)spi_send(SPI2, address);
 
+  //(void)spi_read(SPI2); //Wait here till xfer is done
+  while (SPI_SR(SPI2) & SPI_SR_BSY) ;
+  
   deassertCS();
   return;
 }
@@ -70,7 +80,7 @@ static inline void spiCMD(uint8_t command, uint8_t address)
 static inline void writeEnable()
 {
   if (writeEnabled) return;
-  spiCMD(0x4,0xC0);
+  spiCMD(0x13,0x0);
   writeEnabled=1;
   return;
 }
@@ -78,15 +88,15 @@ static inline void writeEnable()
 EEPROM9366GLOBAL void eeprom9366_eraseAll()
 {
   writeEnable();
-  spiCMD(0x4, 0x80);
-  delayms(6);
+  spiCMD(0x12, 0x0);
+  delayms(10);
 }
 
 EEPROM9366GLOBAL void eeprom9366_erase(uint8_t address)
 {
   writeEnable();
   spiCMD(0x7,address);
-  delayms(6);
+  delayms(10);
   return;
 }
 
@@ -95,7 +105,7 @@ EEPROM9366GLOBAL void eeprom9366_write(uint8_t address, uint8_t data)
 {
   writeEnable();
   (void)spiTransaction(0x5,address,data);
-  delayms(6);
+  delayms(10);
   return;
 }
 
@@ -114,29 +124,37 @@ EEPROM9366GLOBAL void eeprom9366_init()
   //PB14 is SPI2MISO, PB15 SPI2MOSI
   //PCLK is 48MHz, so we need to select a baud rate divider
   //such that SPI CLK is less than 2MHz (32 -> 1.5MHz)
-  gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE,
-                  GPIO10 | GPIO14 | GPIO15);
   gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO9); //Software Slave-Select
-  gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, GPIO9);
   gpio_clear(GPIOB,GPIO9);
+  gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, GPIO9);
   
+  gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_PULLDOWN,
+                  GPIO10 | GPIO14 | GPIO15);
   gpio_set_af(GPIOB, GPIO_AF5, GPIO10 | GPIO14 | GPIO15);
   gpio_set_output_options(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_25MHZ,
-                                 GPIO10 | GPIO15);
+                                 GPIO10 | GPIO15); //SCK and MOSI are driven
+  
+
   rcc_periph_clock_enable(RCC_SPI2);
 
-  spi_reset(SPI2);
+  //spi_reset(SPI2);
+
   spi_set_unidirectional_mode(SPI2);
+  spi_set_dff_8bit(SPI2);
   spi_disable_crc(SPI2);
   spi_set_next_tx_from_buffer(SPI2);
   spi_set_full_duplex_mode(SPI2);
   spi_send_msb_first(SPI2);
-  spi_set_baudrate_prescaler(SPI2,SPI_CR1_BAUDRATE_FPCLK_DIV_32);
+  spi_set_baudrate_prescaler(SPI2,SPI_CR1_BAUDRATE_FPCLK_DIV_128);
   spi_set_master_mode(SPI2);
+  spi_enable_ss_output(SPI2);
   spi_disable_tx_buffer_empty_interrupt(SPI2);
   spi_disable_rx_buffer_not_empty_interrupt(SPI2);
   spi_disable_error_interrupt(SPI2);
   spi_set_standard_mode(SPI2,0);
+
+
+  //spi_init_master(SPI2,SPI_CR1_BAUDRATE_FPCLK_DIV_128,0,0,SPI_CR1_DFF_8BIT,SPI_CR1_MSBFIRST);
 
   spi_enable(SPI2);
   return;
