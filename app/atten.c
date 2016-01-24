@@ -16,6 +16,15 @@
 
 #include "OSandPlatform.h"
 
+//Atten is 10,20,20,20
+//UP adds attenuation. DOWN removes it
+//   dB           0  10  20  30  40  50  60  70
+static int s1_att[8] = { 0,  1,  0,  1,  0,  1,  0,  1 };
+static int s2_att[8] = { 0,  0,  0,  0,  1,  1,  1,  1 };                           
+static int s3_att[8] = { 0,  0,  0,  0,  0,  0,  1,  1 };
+static int s4_att[8] = { 0,  0,  1,  1,  1,  1,  1,  1 };
+
+
 // 30ms is enough to switch the attenuator
 #define ATTEN_DLY 30
 
@@ -88,6 +97,17 @@ void s4(int up) {
   delayms(ATTEN_DLY);
   gpio_clear(S4U);
   gpio_clear(S4D);
+}
+
+void setAtten(int attenuation) {
+  attenuation = (int)(attenuation/10);
+  if ((attenuation < 0) || (attenuation>7)) return;
+
+  s1(s1_att[attenuation]==0);
+  s2(s2_att[attenuation]==0);
+  s3(s3_att[attenuation]==0);
+  s4(s4_att[attenuation]==0);
+  return;
 }
 
 void aux0(int on) {

@@ -44,6 +44,7 @@ ATTENGLOBAL void s1(int up);
 ATTENGLOBAL void s2(int up);
 ATTENGLOBAL void s3(int up);
 ATTENGLOBAL void s4(int up);
+ATTENGLOBAL void setAtten(int att);
 
 ATTENGLOBAL void aux0(int on);
 ATTENGLOBAL void aux1(int on);
