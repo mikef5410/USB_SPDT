@@ -80,7 +80,7 @@ static int cmd_sw(int argc, char **argv)
 
   if (argc == 3) {
     switchN = strtoul(argv[1],NULL,0);
-    val = strtoul(argv[2],NULL,0);
+    val = (0==strtoul(argv[2],NULL,0)); //Invert, 1==no atten, 0==atten
     switch(switchN) {
     case 1: s1(val); break;
     case 2: s2(val); break;
@@ -229,6 +229,20 @@ static int cmd_testee(int argc, char **argv)
 }
 #endif
 
+static int cmd_att(int argc, char **argv)
+{
+  (void) argc;
+  int att=strtoul(argv[1],NULL,0);
+
+  if (att<0 || att>70) {
+    myprintf("Attenuation can be 0 - 70 in 10dB steps\n");
+    return(1);
+  }
+  setAtten(att);
+  return(0);
+}
+
+  
 
 dispatchEntry mainCommands[] = {
 //Context, Command,        ShortHelp,                                          command proc,  help proc
@@ -249,7 +263,8 @@ dispatchEntry mainCommands[] = {
 #ifdef TESTEEPROM
   {"","testee",           "                      Test eeprom", cmd_testee, NULL},
 #endif
-  //LAST ENTRY
+  {"","att",              "attenuation (0-70)    Set attenuation from 0->70dB", cmd_att, NULL},
+    //LAST ENTRY
   {NULL, NULL, NULL, NULL, NULL}
 };
 
