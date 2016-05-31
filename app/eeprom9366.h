@@ -40,9 +40,9 @@
 
 EEPROM9366GLOBAL void eeprom9366_init(void);
 EEPROM9366GLOBAL void eeprom9366_eraseAll(void);
-EEPROM9366GLOBAL void eeprom9366_erase(uint8_t address);
-EEPROM9366GLOBAL void eeprom9366_write(uint8_t address, uint8_t data);
-EEPROM9366GLOBAL uint8_t eeprom9366_read(uint8_t address);
+EEPROM9366GLOBAL void eeprom9366_erase(uint16_t address);
+EEPROM9366GLOBAL void eeprom9366_write(uint16_t address, uint8_t data);
+EEPROM9366GLOBAL uint8_t eeprom9366_read(uint16_t address);
 
 #ifdef TESTEEPROM
 EEPROM9366GLOBAL void eeprom9366_test(void);
