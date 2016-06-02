@@ -34,7 +34,7 @@ static inline void deassertCS()
 {
   volatile uint32_t skip = 0;
 
-  while (skip++ < 250) ;
+  while (skip++ < 30) ;
   gpio_clear(GPIOB,GPIO9);
   //taskEXIT_CRITICAL();
   return;
