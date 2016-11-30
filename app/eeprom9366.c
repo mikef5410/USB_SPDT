@@ -42,11 +42,15 @@ static inline uint8_t spiTransaction(uint8_t command, uint16_t address, uint8_t 
 {
   uint8_t rbyte = 0;
 
-  uint8_t b1 = (command<<1) | ((address & 0x100)>>8);
-  uint8_t b2 = address & 0xff;
+  uint8_t b1 = (command<<2) | ((address & 0x180)>>7);
+  uint8_t b2 = (address & 0x7f)<<1 | ((data & 0x80)>>7); 
+  uint8_t b3 = (data & 0x7f)<<1;
   
-  printf("OUT: 0x%02x, 0x%04x, 0x%02x\n",command, address, data);
-  printf("Trans: 0x%02x 0x%02x 0x%02x\n",b1,b2,data);
+  //printf("OUT: 0x%02x, 0x%04x, 0x%02x\n",command, address, data);
+  //printf("Trans: 0x%02x 0x%02x 0x%02x\n",b1,b2,data);
+
+  rbyte = SPI_DR(SPI2); // Clear the rx buffer
+  
   assertCS();
   // Byte 1 ... 3 bits of command + 9th bit of address
   (void)spi_xfer(SPI2, b1 );
@@ -57,12 +61,12 @@ static inline uint8_t spiTransaction(uint8_t command, uint16_t address, uint8_t 
   // Wait for Tx empty
   //while (!(SPI_SR(SPI2) & SPI_SR_TXE));
 
-  rbyte = spi_xfer(SPI2, data);
-  
+  rbyte = spi_xfer(SPI2, b3);
+
   while ((SPI_SR(SPI2) & SPI_SR_BSY));
 
   deassertCS();
-  printf("IN: 0x%02x\n",rbyte);
+  //printf("IN: 0x%02x\n",rbyte);
   return(rbyte);
 }
 
@@ -72,8 +76,8 @@ static inline void spiCMD(uint8_t command, uint16_t address)
   uint8_t b1 = (command<<1) | ((address & 0x100)>>8);
   uint8_t b2 = address & 0xff;
 
-  printf("OUT: 0x%02x, 0x%02x\n",command, address);
-  printf("Trans: 0x%02x 0x%02x\n",b1,b2);
+  //printf("OUT: 0x%02x, 0x%02x\n",command, address);
+  //printf("Trans: 0x%02x 0x%02x\n",b1,b2);
   assertCS();
   
   // Byte 1 ... 3 bits of command + 1 bit of address
@@ -149,29 +153,25 @@ EEPROM9366GLOBAL void eeprom9366_init()
 
   rcc_periph_clock_enable(RCC_SPI2);
 
-  //spi_reset(SPI2);
+  spi_reset(SPI2);
   spi_init_master(SPI2,1000000,SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE,
                    SPI_CR1_CPHA_CLK_TRANSITION_1, SPI_CR1_DFF_8BIT,
                   SPI_CR1_MSBFIRST);
   
-    //spi_set_dff_8bit(SPI2);
   spi_disable_crc(SPI2);
   spi_set_next_tx_from_buffer(SPI2);
   spi_set_full_duplex_mode(SPI2);
-  //spi_send_msb_first(SPI2);
-  //spi_set_baudrate_prescaler(SPI2,SPI_CR1_BAUDRATE_FPCLK_DIV_128);
-  //spi_set_master_mode(SPI2);
+
   //spi_enable_ss_output(SPI2);
   spi_disable_tx_buffer_empty_interrupt(SPI2);
   spi_disable_rx_buffer_not_empty_interrupt(SPI2);
   spi_disable_error_interrupt(SPI2);
-  //spi_set_standard_mode(SPI2,0);
+
+  spi_set_standard_mode(SPI2,0);
 
   spi_set_baudrate_prescaler(SPI2,0x5); //Divide 48MHz Pclk by 64
 
-  //spi_init_master(SPI2,SPI_CR1_BAUDRATE_FPCLK_DIV_128,0,0,SPI_CR1_DFF_8BIT,SPI_CR1_MSBFIRST);
-
-  spi_enable(SPI2);
+    spi_enable(SPI2);
   return;
 }
 
@@ -181,15 +181,29 @@ EEPROM9366GLOBAL void eeprom9366_test()
   uint8_t d;
   
   myprintf("EEProm Test\n");
-  //eeprom9366_eraseAll();
-  //myprintf("Erase complete\n");
+  eeprom9366_eraseAll();
+  myprintf("Erase complete\n");
   d = eeprom9366_read(0x10);
   myprintf("EEPROM read after erase: 0x%x\n",d);
-  eeprom9366_write(0x10,0xde); delayms(10);
+  eeprom9366_write(0x10,0x41);
   d = eeprom9366_read(0x10);
-  myprintf("EEPROM read after write (0xDE): 0x%x\n",d);
-  //eeprom9366_erase(0x10);
-  delayms(10);
+  myprintf("EEPROM read after write (0x41): 0x%x\n",d);
+  d = eeprom9366_read(0x11);
+  myprintf("EEPROM read after write of next cell : 0x%x\n",d);
+
+  eeprom9366_write(0x11,0x01);
+  eeprom9366_write(0x12,0x2);
+  eeprom9366_write(0x13,0x3);
+
+  printf("Write/read block ... should be 0x41,1,2,3,0xff:\n");
+  uint8_t a;
+  for (a=0x10; a<=0x14; a++) {
+    d= eeprom9366_read(a);
+    printf(" 0x%02x",d);
+  }
+  printf("\n");
+
+  eeprom9366_erase(0x10);
   d = eeprom9366_read(0x10);
   myprintf("EEPROM read after cell erase: 0x%x\n",d);
 
