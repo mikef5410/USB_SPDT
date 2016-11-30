@@ -32,7 +32,7 @@ static inline void assertCS()
 
 static inline void deassertCS()
 {
-  //delayms(1); //Tcsl
+  delayms(1); //Tcsl
   gpio_clear(GPIOB,GPIO9);
   //taskEXIT_CRITICAL();
   return;

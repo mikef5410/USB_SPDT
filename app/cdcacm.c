@@ -74,6 +74,23 @@ static const struct usb_endpoint_descriptor data_endp[] = {{
     .bInterval = 1,
   } };
 
+// Bulk data pipes for control I/O
+static const struct usb_endpoint_descriptor bulkctrl_endp[] = {{
+    .bLength = USB_DT_ENDPOINT_SIZE,
+    .bDescriptorType = USB_DT_ENDPOINT,
+    .bEndpointAddress = 0x03,
+    .bmAttributes = USB_ENDPOINT_ATTR_BULK,
+    .wMaxPacketSize = 64,
+    .bInterval = 1,
+  }, {
+    .bLength = USB_DT_ENDPOINT_SIZE,
+    .bDescriptorType = USB_DT_ENDPOINT,
+    .bEndpointAddress = 0x81,
+    .bmAttributes = USB_ENDPOINT_ATTR_BULK,
+    .wMaxPacketSize = 64,
+    .bInterval = 1,
+  } };
+
 static const struct {
   struct usb_cdc_header_descriptor header;
   struct usb_cdc_call_management_descriptor call_mgmt;
@@ -139,19 +156,38 @@ static const struct usb_interface_descriptor data_iface[] = {{
     .endpoint = data_endp,
   } };
 
+//My bulk control interface
+static const struct usb_interface_descriptor bulkctrl_iface[] = {{
+    .bLength = USB_DT_INTERFACE_SIZE,
+    .bDescriptorType = USB_DT_INTERFACE,
+    .bInterfaceNumber = 2,
+    .bAlternateSetting = 0,
+    .bNumEndpoints = 2,
+    .bInterfaceClass = 0xff,   //vendor-specific
+    .bInterfaceSubClass = 0xff, //vendor-specific
+    .bInterfaceProtocol = 0xff, //vendor-specific
+    .iInterface = 0,
+
+    .endpoint = bulkctrl_endp,
+  } };
+
 static const struct usb_interface ifaces[] = {{
     .num_altsetting = 1,
     .altsetting = comm_iface,
   }, {
     .num_altsetting = 1,
     .altsetting = data_iface,
-  } };
+  }, { //My bulk control interface
+    .num_altsetting = 1,
+    .altsetting = bulkctrl_iface,
+  }
+};
 
 static const struct usb_config_descriptor config = {
   .bLength = USB_DT_CONFIGURATION_SIZE,
   .bDescriptorType = USB_DT_CONFIGURATION,
   .wTotalLength = 0,
-  .bNumInterfaces = 2,
+  .bNumInterfaces = 3,
   .bConfigurationValue = 1,
   .iConfiguration = 0,
   .bmAttributes = 0x80,
@@ -218,6 +254,28 @@ static void cdcacm_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
   }
 }
 
+static void bulkctrl_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
+{
+  (void)ep;
+
+  //portBASE_TYPE rval;
+  //portBASE_TYPE pxHigherPriTaskWoken;
+  
+  char buf[64];
+
+  int len = usbd_ep_read_packet(usbd_dev, 0x03, buf, 64);
+
+        
+  if (len) {
+    for (int j = 0; j<len; j++) {
+      ;
+      //rval=xQueueSendFromISR(UARTinQ,&(buf[j]),&pxHigherPriTaskWoken);
+      //(void)rval;
+      //if (rval != pdTRUE) { queue was full; }
+    }
+  }
+}
+
 static void cdcacm_set_config(usbd_device *usbd_dev, uint16_t wValue)
 {
   (void)wValue;
@@ -227,6 +285,11 @@ static void cdcacm_set_config(usbd_device *usbd_dev, uint16_t wValue)
                 cdcacm_data_rx_cb);
   usbd_ep_setup(usbd_dev, 0x82, USB_ENDPOINT_ATTR_BULK, 64, NULL);
   usbd_ep_setup(usbd_dev, 0x83, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
+
+  usbd_ep_setup(usbd_dev, 0x03, USB_ENDPOINT_ATTR_BULK, 64,
+                bulkctrl_data_rx_cb);
+  usbd_ep_setup(usbd_dev, 0x81, USB_ENDPOINT_ATTR_BULK, 64, NULL);
+  
 
   usbd_register_control_callback(
                                  usbd_dev,
