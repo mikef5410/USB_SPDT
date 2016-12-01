@@ -23,11 +23,19 @@
 #include <libopencm3/usb/cdc.h>
 
 
+static char serialNumber[24];
+static char manufacturer[64]="MF";
+static char product[64]="USB Switch/Attenuator/Stacklight";
+static uint16_t vendorID = 0x4161;
+static uint16_t productID = 0x0002;
+
 xQueueHandle UARTinQ;
+xQueueHandle CTRLinQ;
+
 usbd_device *CDCACM_dev;
 static xSemaphoreHandle usbInterrupted = NULL;
 
-static const struct usb_device_descriptor dev = {
+static struct usb_device_descriptor dev = {
   .bLength = USB_DT_DEVICE_SIZE,
   .bDescriptorType = USB_DT_DEVICE,
   .bcdUSB = 0x0200,
@@ -61,7 +69,7 @@ static const struct usb_endpoint_descriptor comm_endp[] = {{
 static const struct usb_endpoint_descriptor data_endp[] = {{
     .bLength = USB_DT_ENDPOINT_SIZE,
     .bDescriptorType = USB_DT_ENDPOINT,
-    .bEndpointAddress = 0x01,
+    .bEndpointAddress = 0x02,
     .bmAttributes = USB_ENDPOINT_ATTR_BULK,
     .wMaxPacketSize = 64,
     .bInterval = 1,
@@ -78,7 +86,7 @@ static const struct usb_endpoint_descriptor data_endp[] = {{
 static const struct usb_endpoint_descriptor bulkctrl_endp[] = {{
     .bLength = USB_DT_ENDPOINT_SIZE,
     .bDescriptorType = USB_DT_ENDPOINT,
-    .bEndpointAddress = 0x03,
+    .bEndpointAddress = 0x01,
     .bmAttributes = USB_ENDPOINT_ATTR_BULK,
     .wMaxPacketSize = 64,
     .bInterval = 1,
@@ -197,9 +205,9 @@ static const struct usb_config_descriptor config = {
 };
 
 static const char * usb_strings[] = {
-  "MF",
-  "USB Switch/Attenuator",
-  NULL,
+  manufacturer,
+  product,
+  serialNumber,
 };
 
 /* Buffer to be used for control requests. */
@@ -242,7 +250,7 @@ static void cdcacm_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
   
   char buf[64];
 
-  int len = usbd_ep_read_packet(usbd_dev, 0x01, buf, 64);
+  int len = usbd_ep_read_packet(usbd_dev, 0x02, buf, 64);
 
         
   if (len) {
@@ -258,19 +266,19 @@ static void bulkctrl_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
 {
   (void)ep;
 
-  //portBASE_TYPE rval;
-  //portBASE_TYPE pxHigherPriTaskWoken;
+  portBASE_TYPE rval;
+  portBASE_TYPE pxHigherPriTaskWoken;
   
   char buf[64];
 
-  int len = usbd_ep_read_packet(usbd_dev, 0x03, buf, 64);
+  int len = usbd_ep_read_packet(usbd_dev, 0x01, buf, 64);
 
         
   if (len) {
     for (int j = 0; j<len; j++) {
       ;
-      //rval=xQueueSendFromISR(UARTinQ,&(buf[j]),&pxHigherPriTaskWoken);
-      //(void)rval;
+      rval=xQueueSendFromISR(CTRLinQ,&(buf[j]),&pxHigherPriTaskWoken);
+      (void)rval;
       //if (rval != pdTRUE) { queue was full; }
     }
   }
@@ -281,12 +289,13 @@ static void cdcacm_set_config(usbd_device *usbd_dev, uint16_t wValue)
   (void)wValue;
 
   
-  usbd_ep_setup(usbd_dev, 0x01, USB_ENDPOINT_ATTR_BULK, 64,
+  usbd_ep_setup(usbd_dev, 0x02, USB_ENDPOINT_ATTR_BULK, 64,
                 cdcacm_data_rx_cb);
   usbd_ep_setup(usbd_dev, 0x82, USB_ENDPOINT_ATTR_BULK, 64, NULL);
+
   usbd_ep_setup(usbd_dev, 0x83, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
 
-  usbd_ep_setup(usbd_dev, 0x03, USB_ENDPOINT_ATTR_BULK, 64,
+  usbd_ep_setup(usbd_dev, 0x01, USB_ENDPOINT_ATTR_BULK, 64,
                 bulkctrl_data_rx_cb);
   usbd_ep_setup(usbd_dev, 0x81, USB_ENDPOINT_ATTR_BULK, 64, NULL);
   
@@ -318,10 +327,17 @@ portTASK_FUNCTION(vUSBCDCACMTask, pvParameters)
   (void)(pvParameters);//unused params
 
   UARTinQ = xQueueCreate( 256, sizeof(char));
+  CTRLinQ = xQueueCreate( 256, sizeof(char));
 
+  //Descriptors
   desig_get_unique_id_as_string(id,24); //Copy device SN to USB reported SN
-  usb_strings[2]=id;       
+  //strncpy(serialNumber,id,24);
+  strncpy(serialNumber,id + strlen(id)- 8,24);
 
+  dev.idVendor=vendorID;
+  dev.idProduct=productID;
+
+  
   usbd_dev = usbd_init(&stm32f411_usb_driver, &dev, &config,
                        usb_strings, 3,
                        usbd_control_buffer, sizeof(usbd_control_buffer));
