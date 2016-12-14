@@ -2,6 +2,7 @@
 #include "OSandPlatform.h"
 
 #include "debug_shell.h"
+#include "instr_task.h"
 
 xTaskHandle *xLED1TaskHandle;
 xTaskHandle *xStackTaskHandle;
@@ -15,14 +16,20 @@ static portTASK_FUNCTION(vLEDTask1, pvParameters)
 {
   (void)(pvParameters);//unused params
   while(1) {
-    greenOn(1);
-    delayms(50);
-    greenOn(0);
-    delayms(100);
-    greenOn(1);
-    delayms(50);
-    greenOn(0);
-    delayms(800);
+    if (USBConfigured) {
+      redOn(0);
+      greenOn(1);
+      delayms(50);
+      greenOn(0);
+      delayms(100);
+      greenOn(1);
+      delayms(50);
+      greenOn(0);
+      delayms(800);
+    } else {
+      redOn(1);
+      taskYIELD();
+    }
   }
 }
 
@@ -58,6 +65,7 @@ int main(void)
                         (xTaskHandle *) &xStackTaskHandle);
 
 
+  delayms(50);
   qStatus = xTaskCreate(vUSBCDCACMTask, "USB Serial Task", 256, NULL, (tskIDLE_PRIORITY + 1UL),
                         (xTaskHandle *) &xUSBCDCACMTaskHandle);
 

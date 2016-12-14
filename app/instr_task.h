@@ -30,6 +30,9 @@
 // PRIVATE API AND SUBJECT TO CHANGE!
 // ----------------------------------------------------------------
 
+INSTR_TASKGLOBAL xQueueHandle CTRLinQ;
+INSTR_TASKGLOBAL uint32_t USBConfigured INSTR_TASKPRESET(0);
+
 // ----------------------------------------------------------------
 // PUBLIC API definition
 // ----------------------------------------------------------------

@@ -72,7 +72,9 @@ typedef int32_t ChipDriverStatus_t;
 #define FAILURE 1
 #define DO_NOT_TX -1
 #define SATURATED 101
-
+#define TRUE 1
+#define FALSE 0
+  
 #ifndef RELEASE
 #define ASSERT(EXPR) assert(EXPR)
 #else
