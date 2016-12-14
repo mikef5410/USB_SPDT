@@ -67,6 +67,6 @@ BSPGLOBAL void Delay(volatile uint32_t nCount);
 
 #define HVEnable BSPGPIO(D,2)
 
-#define MSleep(x) Delay((x) * 96000UL)
+#define MSleep(x) Delay((x) * 30000UL)
 
 #endif				//_BSP_INCLUDED

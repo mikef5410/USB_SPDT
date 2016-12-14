@@ -30,8 +30,33 @@ extern "C" {
     CMD_ECHO,       // 04 0x04  
     CMD_SSN,        // 05 0x05  silicon serial number
     CMD_DIAG,       // 06 0x06  diagnostic self-test cmd, result-string
+    CMD_SP8T,       // 07 0x07  set the SP8T to selected (payload one byte)
+    CMD_AUXOUT,     // 08 0x08  set auxout bits (payload one byte)
+    CMD_AUXIN,      // 09 0x09  read aux in bits
+    CMD_ATT,        // 10 0x0A  set attenuation (one byte, enum)
+    CMD_LIGHT,      // 11 0x0B  set stacklight static (one byte, bitmapped)
+    CMD_NOTIFY,     // 12 0x0C  blink light (4 bytes: R|Y|G|OFF, on time, off time, count)
+    CMD_READEE,     // 13 0x0D  read one byte of EEprom, 2-byte address (LE)
+    CMD_WRITEEE,    // 14 0x0E  write one byte of EEprom, 2-byte address (LE), 1 byte data
   } pkttype_t;
 
+  typedef enum {
+    ATT_0DB = 0,
+    ATT_10DB,
+    ATT_20DB,
+    ATT_30DB,
+    ATT_40DB,
+    ATT_50DB,
+    ATT_60DB,
+    ATT_70DB
+  } attenSetting_t;
+    
+  typedef enum {
+    FLOW_USB = 0,
+    FLOW_KBD,
+    FLOW_DEBUGSHELL,
+  } cmdflow_t;
+  
   // define some generic payloads for parameterized commands
   //   For example, RESET now takes an argument for type of reset
   typedef struct __attribute__((__packed__)) {
@@ -97,11 +122,14 @@ extern "C" {
   typedef struct {        // SSN: silicon serial number
     uint32_t ssn_values[3]; // zero-fill unused bits, little-endian
   } payload_ssn_t;
- 
+
+  //Packet has a flow indicator of type cmdflow_t but a packet on the wire doesn't have this field.
+  //It's added by the receiver ...
   typedef struct  __attribute__((__packed__)) {
+    uint8_t  flow;
     uint8_t  version;   // Protocol version
     uint16_t length;    // Number of bytes in packet
-    uint8_t  type;      // one byte
+    uint8_t  cmd;      // one byte
     uint16_t checksum;  // two bytes
     union {
       uint8_t               *asBytes;
@@ -115,9 +143,10 @@ extern "C" {
       payload_int32_t       pl_int32;
       payload_uint32_t      pl_uint32;
     } payload;
-  } usb_packet_t;
+  } cmd_packet_t;
 
-
+#define USB_PKT_MIN_HEADER_SZ (6)
+  
   // Simple, speedy 8 bit checksum
   typedef struct __attribute__((__packed__)) {
     uint16_t Checksum1;

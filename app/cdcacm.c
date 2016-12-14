@@ -22,12 +22,22 @@
 #include <libopencm3/stm32/f4/nvic.h>
 #include <libopencm3/usb/cdc.h>
 
+#include "instr_task.h"
+#include "usbcmdio.h"
+
+static char serialNumber[24];
+static char manufacturer[64]="MF";
+static char product[64]="USB Switch/Attenuator/Stacklight";
+static uint16_t vendorID = 0x4161;
+static uint16_t productID = 0x0002;
 
 xQueueHandle UARTinQ;
+
+
 usbd_device *CDCACM_dev;
 static xSemaphoreHandle usbInterrupted = NULL;
 
-static const struct usb_device_descriptor dev = {
+static struct usb_device_descriptor dev = {
   .bLength = USB_DT_DEVICE_SIZE,
   .bDescriptorType = USB_DT_DEVICE,
   .bcdUSB = 0x0200,
@@ -61,7 +71,7 @@ static const struct usb_endpoint_descriptor comm_endp[] = {{
 static const struct usb_endpoint_descriptor data_endp[] = {{
     .bLength = USB_DT_ENDPOINT_SIZE,
     .bDescriptorType = USB_DT_ENDPOINT,
-    .bEndpointAddress = 0x01,
+    .bEndpointAddress = 0x02,
     .bmAttributes = USB_ENDPOINT_ATTR_BULK,
     .wMaxPacketSize = 64,
     .bInterval = 1,
@@ -69,6 +79,23 @@ static const struct usb_endpoint_descriptor data_endp[] = {{
     .bLength = USB_DT_ENDPOINT_SIZE,
     .bDescriptorType = USB_DT_ENDPOINT,
     .bEndpointAddress = 0x82,
+    .bmAttributes = USB_ENDPOINT_ATTR_BULK,
+    .wMaxPacketSize = 64,
+    .bInterval = 1,
+  } };
+
+// Bulk data pipes for control I/O
+static const struct usb_endpoint_descriptor bulkctrl_endp[] = {{
+    .bLength = USB_DT_ENDPOINT_SIZE,
+    .bDescriptorType = USB_DT_ENDPOINT,
+    .bEndpointAddress = 0x01,
+    .bmAttributes = USB_ENDPOINT_ATTR_BULK,
+    .wMaxPacketSize = 64,
+    .bInterval = 1,
+  }, {
+    .bLength = USB_DT_ENDPOINT_SIZE,
+    .bDescriptorType = USB_DT_ENDPOINT,
+    .bEndpointAddress = 0x81,
     .bmAttributes = USB_ENDPOINT_ATTR_BULK,
     .wMaxPacketSize = 64,
     .bInterval = 1,
@@ -139,19 +166,38 @@ static const struct usb_interface_descriptor data_iface[] = {{
     .endpoint = data_endp,
   } };
 
+//My bulk control interface
+static const struct usb_interface_descriptor bulkctrl_iface[] = {{
+    .bLength = USB_DT_INTERFACE_SIZE,
+    .bDescriptorType = USB_DT_INTERFACE,
+    .bInterfaceNumber = 2,
+    .bAlternateSetting = 0,
+    .bNumEndpoints = 2,
+    .bInterfaceClass = 0xff,   //vendor-specific
+    .bInterfaceSubClass = 0xff, //vendor-specific
+    .bInterfaceProtocol = 0xff, //vendor-specific
+    .iInterface = 0,
+
+    .endpoint = bulkctrl_endp,
+  } };
+
 static const struct usb_interface ifaces[] = {{
     .num_altsetting = 1,
     .altsetting = comm_iface,
   }, {
     .num_altsetting = 1,
     .altsetting = data_iface,
-  } };
+  }, { //My bulk control interface
+    .num_altsetting = 1,
+    .altsetting = bulkctrl_iface,
+  }
+};
 
 static const struct usb_config_descriptor config = {
   .bLength = USB_DT_CONFIGURATION_SIZE,
   .bDescriptorType = USB_DT_CONFIGURATION,
   .wTotalLength = 0,
-  .bNumInterfaces = 2,
+  .bNumInterfaces = 3,
   .bConfigurationValue = 1,
   .iConfiguration = 0,
   .bmAttributes = 0x80,
@@ -161,9 +207,9 @@ static const struct usb_config_descriptor config = {
 };
 
 static const char * usb_strings[] = {
-  "MF",
-  "USB Switch/Attenuator",
-  NULL,
+  manufacturer,
+  product,
+  serialNumber,
 };
 
 /* Buffer to be used for control requests. */
@@ -206,7 +252,7 @@ static void cdcacm_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
   
   char buf[64];
 
-  int len = usbd_ep_read_packet(usbd_dev, 0x01, buf, 64);
+  int len = usbd_ep_read_packet(usbd_dev, 0x02, buf, 64);
 
         
   if (len) {
@@ -218,21 +264,52 @@ static void cdcacm_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
   }
 }
 
+static void bulkctrl_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
+{
+  (void)ep;
+
+  cmdflow_t flow = FLOW_USB;
+  portBASE_TYPE rval;
+  portBASE_TYPE pxHigherPriTaskWoken;
+  
+  char buf[64];
+
+  int len = usbd_ep_read_packet(usbd_dev, 0x01, buf, 64);
+
+        
+  if (len) {
+    rval=xQueueSendFromISR(CTRLinQ,(uint8_t *)&flow,&pxHigherPriTaskWoken); //Enqueue the flow indicator
+    for (int j = 0; j<len; j++) { // and now the incoming packet
+      rval=xQueueSendFromISR(CTRLinQ,&(buf[j]),&pxHigherPriTaskWoken);
+      (void)rval;
+      //if (rval != pdTRUE) { queue was full; }
+    }
+  }
+}
+
 static void cdcacm_set_config(usbd_device *usbd_dev, uint16_t wValue)
 {
   (void)wValue;
 
   
-  usbd_ep_setup(usbd_dev, 0x01, USB_ENDPOINT_ATTR_BULK, 64,
+  usbd_ep_setup(usbd_dev, 0x02, USB_ENDPOINT_ATTR_BULK, 64,
                 cdcacm_data_rx_cb);
   usbd_ep_setup(usbd_dev, 0x82, USB_ENDPOINT_ATTR_BULK, 64, NULL);
+
   usbd_ep_setup(usbd_dev, 0x83, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
+
+  usbd_ep_setup(usbd_dev, 0x01, USB_ENDPOINT_ATTR_BULK, 64,
+                bulkctrl_data_rx_cb);
+  usbd_ep_setup(usbd_dev, 0x81, USB_ENDPOINT_ATTR_BULK, 64, NULL);
+  
 
   usbd_register_control_callback(
                                  usbd_dev,
                                  USB_REQ_TYPE_CLASS | USB_REQ_TYPE_INTERFACE,
                                  USB_REQ_TYPE_TYPE | USB_REQ_TYPE_RECIPIENT,
                                  cdcacm_control_request);
+  USBConfigured=1;
+
 }
 
 void otg_fs_isr(void) __attribute__ ((interrupt ));
@@ -255,24 +332,36 @@ portTASK_FUNCTION(vUSBCDCACMTask, pvParameters)
   (void)(pvParameters);//unused params
 
   UARTinQ = xQueueCreate( 256, sizeof(char));
+  CTRLinQ = xQueueCreate( 256, sizeof(char));
 
+  //Descriptors
   desig_get_unique_id_as_string(id,24); //Copy device SN to USB reported SN
-  usb_strings[2]=id;       
+  //strncpy(serialNumber,id,24);
+  strncpy(serialNumber,id + strlen(id)- 8,24);
 
-  usbd_dev = usbd_init(&stm32f411_usb_driver, &dev, &config,
-                       usb_strings, 3,
-                       usbd_control_buffer, sizeof(usbd_control_buffer));
+  dev.idVendor=vendorID;
+  dev.idProduct=productID;
 
-  usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
-  CDCACM_dev=usbd_dev;
-
+  
   vSemaphoreCreateBinary(usbInterrupted);
   //Take the semaphore nonblocking to ensure in the correct state
   xSemaphoreTake(usbInterrupted,0);
 
+
+
+  
+  usbd_dev = usbd_init(&stm32f411_usb_driver, &dev, &config,
+                       usb_strings, 3,
+                       usbd_control_buffer, sizeof(usbd_control_buffer));
+
+  nvic_disable_irq(NVIC_OTG_FS_IRQ);
+  usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
+
+  
   nvic_set_priority(NVIC_OTG_FS_IRQ,0xdf);
   nvic_enable_irq(NVIC_OTG_FS_IRQ);
-
+  
+  CDCACM_dev=usbd_dev;
   while (1) {
     if (pdPASS == xSemaphoreTake(usbInterrupted,portMAX_DELAY)) {
       usbd_poll(usbd_dev);

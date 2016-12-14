@@ -51,7 +51,7 @@ $(OBJS_DIR):
 # Primary Target (Application) Build
 ##############
 
-APP_SRCS = main.c bsp.c syscalls.c printf-stdarg.c cdcacm.c debug_shell.c command.c hiresTimer.c usb_f411.c atten.c fault_handler.c stacklight.c eeprom9366.c
+APP_SRCS = main.c bsp.c syscalls.c printf-stdarg.c cdcacm.c debug_shell.c command.c hiresTimer.c usb_f411.c atten.c fault_handler.c stacklight.c eeprom9366.c instr_task.c
 
 APP_LIBS = libFreeRTOS.a $(LIBOPENCM3_LIBNAME)
 APP_INCLUDE = $(FREERTOS_INC) $(LIBOPENCM3_INC)
@@ -75,7 +75,7 @@ download: $(PROG).bin
 
 DFU: $(PROG).bin
 	dfu-suffix -c $(PROG).bin || dfu-suffix -a $(PROG).bin
-	dfu-util  -D $(PROG).bin -d 0483:df11 -a0 -s 0x08000000 && dfu-util -s 0x08000000 -e -E 3
+	dfu-util  -D $(PROG).bin -d 0483:df11 -a0 -s 0x08000000:leave #&& dfu-util -s 0x08000000 -e #-E 3
 
 
 include mk/tags.mk
