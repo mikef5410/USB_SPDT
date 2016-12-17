@@ -480,7 +480,7 @@ void IntDefaultHandler(void)
 
 void selfReset(void)
 {
-  //Chip_RGU_TriggerReset (RGU_MASTER_RST);
+  scb_reset_system();
 }
 
 
