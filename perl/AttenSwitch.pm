@@ -1,0 +1,318 @@
+package AttenSwitch;
+
+use Device::USB;
+use Moose;
+use Moose::Exporter;
+use MooseX::ClassAttribute;
+
+use namespace::autoclean;
+
+#
+# Class Attributes
+class_has 'validVids' => (
+  is      => 'ro',
+  default => sub { [ 0x4161, ] }
+);
+
+class_has 'validPids' => (
+  is      => 'ro',
+  default => sub { [ 0x0001, 0x0002 ] }
+);
+
+class_has 'SUCCESS' => ( is => 'ro', default => 0 );
+class_has 'FAIL'    => ( is => 'ro', default => -1 );
+
+class_has 'CMD_OUT_EP' => ( is => 'rw', default => 0x1 );
+class_has 'CMD_IN_EP'  => ( is => 'rw', default => 0x1 );
+#
+# Instance Attributes
+has 'dev' => (
+  is        => 'rw',
+  isa       => 'Device::USB::Device',
+  predicate => 'connected',
+  builder   => 'connect',
+  lazy      => 1,
+);
+
+has 'usb' => (
+  is      => 'rw',
+  isa     => 'Device::USB',
+  default => sub { Device::USB->new(); }
+);
+
+has 'VID' => (
+  is        => 'rw',
+  isa       => 'Int',
+  predicate => 'has_VID',
+);
+
+has 'PID' => (
+  is        => 'rw',
+  isa       => 'Int',
+  predicate => 'has_PID',
+);
+
+has 'PRODINFO' => (
+  is  => 'rw',
+  isa => 'AttenSwitch::ProdInfo'
+);
+
+has 'verbose' => (
+  is      => 'rw',
+  isa     => 'Bool',
+  default => 0
+);
+
+has 'timeout_ms' => (
+  is      => 'rw',
+  isa     => 'Int',
+  default => 500
+);
+
+sub connect {
+  my $self = shift;
+
+  my @vids = $self->has_VID() ? $self->VID() : @{ AttenSwitch->validVids() };
+  my @pids = $self->has_PID() ? $self->PID() : @{ AttenSwitch->validPids() };
+
+  my $vid;
+  my $pid;
+  my $dev;
+
+  foreach $vid (@vids) {
+    foreach $pid (@pids) {
+      $dev = $self->usb->find_device( $vid, $pid );
+      if ( defined $dev ) {
+        goto FOUND;
+      }
+    }
+  }
+
+  if ( !defined $dev ) {
+    print "ERROR: could not find any Tek devices \n";
+    return AttenSwitch->FAIL;
+  }
+
+FOUND:
+  $self->VID( $dev->idVendor() );
+  $self->PID( $dev->idProduct() );
+
+  $dev->open();
+  if ( $self->verbose ) {
+    printf( "Manufacturer   %s, %s \n",                $dev->manufacturer(), $dev->product() );
+    printf( "Device         VID: %04X   PID: %04X \n", $self->VID,           $self->PID );
+  }
+  my $cfg   = $dev->config()->[0];
+  my $numIf = $cfg->bNumInterfaces();
+  my $inter = $cfg->interfaces()->[0]->[0];
+  for ( my $if = 0 ; $if < $numIf ; $if++ ) {
+    $inter = $cfg->interfaces()->[$if]->[0];
+    my $numEp = $inter->bNumEndpoints();
+    if ( $self->verbose() ) {
+      printf( "Interface      0x%x,  index %d \n", $inter, $if );
+      printf("Endpoints      ");
+    }
+    for ( my $epnum = 0 ; $epnum < $numEp ; $epnum++ ) {
+      my $ep = $inter->endpoints()->[$epnum];
+      printf( "0x%02x   ", $ep->bEndpointAddress() ) if ( $self->verbose() );
+    }
+    printf("\n") if ( $self->verbose() );
+  }
+  my $claim = $dev->claim_interface(0x2);
+  printf("Claim returns  $claim \n") if ( $self->verbose() );
+
+  $self->dev($dev);
+
+  # $dev->close();
+  return AttenSwitch->SUCCESS;
+}
+
+sub disconnect {
+  my $self = shift;
+
+  $self->dev->release_interface(0x2);
+  undef( $self->{dev} );
+}
+
+sub send_packet {
+  my $self   = shift;
+  my $packet = shift;    #AttenSwitch::Packet;
+
+  my $rxPacket = AttenSwitch::Packet->new();
+
+  if ( defined( $self->dev ) ) {
+    if ( ref($packet) && $packet->isa("AttenSwitch::Packet") ) {
+
+      #First, send out the packet ....
+      my $txTot = 0;
+      my $bytes = $packet->packet;
+      my $notSent;
+
+      do {
+        my $ret = $self->dev->bulk_write( AttenSwitch->CMD_OUT_EP, $bytes, length($bytes), $self->timeout_ms );
+        $txTot += $ret;
+        $notSent = length( $packet->packet ) - $txTot;
+        $bytes = substr( $packet->packet, $txTot );
+      } while ( $notSent > 0 );
+
+      #Now, get the response packet
+      my $rxbuf = "";
+      my $ret;
+
+      $ret = $self->dev->bulk_read( AttenSwitch->CMD_IN_EP, $rxbuf, 1024, $self->timeout_ms );
+      $rxPacket->from_bytes($rxbuf);
+      if ( $rxPacket->command->is_ack ) {
+        return ( AttenSwitch->SUCCESS, $rxPacket );
+      }
+    }
+  }
+
+  return ( Tek::LE320->FAIL, $rxPacket );
+}
+
+__PACKAGE__->meta->make_immutable;
+1;
+
+package AttenSwitch::Packet;
+use Moose;
+use namespace::autoclean;
+
+has proto_version => ( is => 'rw', isa => 'Int', default => 1 );
+has command => ( is => 'rw', isa => AttenSwitch::COMMAND, predicate => 'has_command' );
+has payload => ( is => 'rw', isa => 'Str', predicate => 'has_payload' );
+has packet => ( is => 'rw', isa => 'Str' );
+
+#Called right after object construction so we can say:
+# $obj=AttenSwitch::Packet->new(command=>$command,payload=>$payload);
+sub BUILD {
+  my $self = shift;
+
+  $self->make() if ( $self->has_command() && $self->has_payload() );
+}
+
+ub make {
+  my $self    = shift;
+  my $command = shift;    #AttenSwitch::COMMAND
+  my $payload = shift;    #String of bytes
+
+  if ( defined($command)
+    && ref($command)
+    && $command->isa("Tek::LE320::COMMAND") )
+  {
+    $self->command($command);
+  }
+
+  if ( defined($payload) ) {
+    $self->payload($payload);
+  }
+
+  if ( $self->has_command() && $self->has_payload() ) {
+    $self->packet( pack( "CC", length( $self->payload ) + 4, $self->command->ordinal ) );
+    $self->packet( $self->packet . pack( "v", $self->cksum_simple( $self->payload ) ) );
+    $self->packet( $self->packet . $self->payload );
+  }
+}
+
+sub from_bytes {
+  my $self   = shift;
+  my $packet = shift;
+
+  if ( defined($packet) ) {
+    $self->packet($packet);
+  }
+
+  my $len = unpack( 'C', substr( $self->packet, 0, 1 ) );
+  my $cmd = unpack( 'C', substr( $self->packet, 1, 1 ) );
+  my $sum = unpack( 'v', substr( $self->packet, 2, 2 ) );
+  $self->payload( substr( $self->packet, 4 ) );
+  $self->command( AttenSwitch::COMMAND->from_ordinal($cmd) );
+}
+
+sub cksum_simple {
+  my $self    = shift;
+  my $payload = shift;
+
+  my $sum = 0;
+  for my $ch ( unpack( 'C*', $payload ) ) {
+    $sum += $ch;
+    $sum &= 0xffff;
+  }
+  return ($sum);
+}
+
+sub dump {
+  my $self = shift;
+
+  my $pkt   = $self->payload;
+  my $ascii = "";
+  my $len   = unpack( 'C', substr( $self->packet, 0, 1 ) );
+  my $sum   = unpack( 'v', substr( $self->packet, 2, 2 ) );
+
+  printf( "Len: %d\n",   $len );
+  printf( "Cmd: %s\n",   $self->command->name );
+  printf( "Sum: 0x%x\n", $sum );
+  printf("Payload:\n");
+  printf( "%04x - ", 0 );
+  my $j = 0;
+  for ( $j = 0 ; $j < length($pkt) ; $j++ ) {
+    my $val = unpack( "C", substr( $pkt, $j, 1 ) );
+    if ( $j && !( $j % 16 ) ) {
+      printf("   $ascii");
+      $ascii = "";
+      printf( "\n%04x - ", $j );
+    }
+    if ( ( $val < 0x20 ) || ( $val > 0x7E ) ) {
+      $ascii .= '.';
+    } else {
+      $ascii .= chr($val);
+    }
+    printf( "%02x ", $val );
+  }
+  my $adj = 16 - ( $j % 16 );
+  print '   ' x $adj, "   ", $ascii, "\n";
+}
+
+__PACKAGE__->meta->make_immutable;
+1;
+
+package AttenSwitch::ProdInfo;
+use Moose;
+use namespace::autoclean;
+
+has 'productID'              => ( is => 'rw', isa => 'AttenSwitch::MODEL' );
+has 'protocolVersion'        => ( is => 'rw', isa => 'Int' );
+has 'fwRevMajor'             => ( is => 'rw', isa => 'Int' );
+has 'fwRevMinor'             => ( is => 'rw', isa => 'Int' );
+has 'fwRevBuild'             => ( is => 'rw', isa => 'Int' );
+has 'fwSHA1'                 => ( is => 'rw', isa => 'Str' );
+has 'fwBldInfo'              => ( is => 'rw', isa => 'Str' );
+has 'ControllerBoardVersion' => ( is => 'rw', isa => 'AttenSwitch::VERSION' );
+has 'Model'                  => ( is => 'rw', isa => 'AttenSwitch::MODEL' );
+has 'SN'                     => ( is => 'rw', isa => 'Str' );
+
+__PACKAGE__->meta->make_immutable;
+1;
+
+#
+# BEGIN ENUMERATION CLASSES
+#
+package AttenSwitch::COMMAND;
+use Class::Enum qw(ACK NAK RESET ID ECHO SSN DIAG SP8T
+  AUXOUT AUXIN ATT LIGHT NOTIFY READEE
+  WRITEEE
+);
+1;
+
+package AttenSwitch::ATTEN;
+use Class::Enum qw(ATT_0DB ATT_10DB ATT_20DB ATT_30DB ATT_40DB
+  ATT_50DB ATT_60DB ATT_70DB);
+1;
+
+package AttenSwitch::VERSION;
+use Class::Enum qw(REV_UNKNOWN REVA );
+1;
+
+package AttenSwitch::MODEL;
+use Class::Enum qw(MODEL_UNKNOWN ATTEN70 SP8T STACKLIGHT SPDT );
+1;
+

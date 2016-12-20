@@ -21,6 +21,7 @@
 
 // #define RX_QUEUE_DEBUG 1
 // #define TX_QUEUE_DEBUG 1
+extern usbd_device *CDCACM_dev; //cdcacm.c
 
 uint8_t inbufBytes[256];
 uint8_t outbufBytes[256];
@@ -44,12 +45,36 @@ static int32_t readPacket(cmd_packet_t *buffer)
   return (rval);
 }
 
+//returns bytes written or 0 if failed.
 static int32_t writePacket(cmd_packet_t *buff, portTickType TMO)
 {
+  FLETCHER_CHECKSUM sums;
+  uint16_t rval=0;
+  portTickType timeLeft = TMO;
+  int32_t j;
+  uint8_t *buffbytes = (uint8_t *)buff;
+  
+  sums.Checksum1=0;
+  sums.Checksum2=0;
+
   //compute checksum, send packet
-  (void)buff;
-  (void)TMO;
-  return(0);
+  buff->checksum=0;
+  for (j=1; j<(buff->length-1); j++) {
+    FLETCH(&sums,buffbytes[j]);
+  }
+  buff->checksum = (uint16_t) sums.Checksum2*256 + sums.Checksum1;
+
+  if (TMO==0) timeLeft=10;
+  rval=usbd_ep_write_packet(CDCACM_dev, 0x81, buffbytes+1, buff->length); //skip the flow byte
+  while (rval==0 && timeLeft>1) {
+    if (rval == 0) {
+      delayms(1);
+      if (TMO) timeLeft-=1;
+    }
+    rval=usbd_ep_write_packet(CDCACM_dev, 0x81, buffbytes+1, buff->length); //skip the flow byte
+  }
+
+  return(rval);
 }
 
 // this method supports the ECHO command, in the dispatcher

@@ -291,13 +291,14 @@ static void cdcacm_set_config(usbd_device *usbd_dev, uint16_t wValue)
 {
   (void)wValue;
 
-  
+  //CDCACM data endpoints 0x2,0x82
   usbd_ep_setup(usbd_dev, 0x02, USB_ENDPOINT_ATTR_BULK, 64,
                 cdcacm_data_rx_cb);
   usbd_ep_setup(usbd_dev, 0x82, USB_ENDPOINT_ATTR_BULK, 64, NULL);
-
+  //CDCACM interrupt endpoint 0x83
   usbd_ep_setup(usbd_dev, 0x83, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
 
+  //Bulk control endpoints 0x1,0x81
   usbd_ep_setup(usbd_dev, 0x01, USB_ENDPOINT_ATTR_BULK, 64,
                 bulkctrl_data_rx_cb);
   usbd_ep_setup(usbd_dev, 0x81, USB_ENDPOINT_ATTR_BULK, 64, NULL);

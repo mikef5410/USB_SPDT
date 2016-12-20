@@ -130,7 +130,7 @@ extern "C" {
     uint8_t  version;   // Protocol version
     uint16_t length;    // Number of bytes in packet
     uint8_t  cmd;      // one byte
-    uint16_t checksum;  // two bytes
+    uint16_t checksum;  // two bytes computed with checksum field=0
     union {
       uint8_t               *asBytes;
       payload_id_response_t id_resp;
