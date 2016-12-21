@@ -80,7 +80,7 @@ static int32_t writePacket(cmd_packet_t *buff, portTickType TMO)
 // this method supports the ECHO command, in the dispatcher
 static void copyPacket(cmd_packet_t *inBuf, cmd_packet_t *outBuf) {
   if ((inBuf != NULL) && (outBuf != NULL)) {
-    int sz = inBuf->length;
+    int sz = inBuf->length + 1;
     if ((sz > 0) && (sz < 248)) {   // 248 = limit of regio values array
       memcpy(outBuf, inBuf, sz);
     }
@@ -104,6 +104,7 @@ __attribute__((noreturn)) portTASK_FUNCTION(vInstrumentTask, pvParameters) {
     if ((rval=readPacket(instrInpktBuf))==0) {
       taskYIELD();// no Rx DATA so yield to other threads
     } else {
+      instrOutpktBuf->version = 1;
       instrOutpktBuf->cmd = CMD_ACK; // default all packets to ACK-type
       instrOutpktBuf->length = USB_PKT_MIN_HEADER_SZ; // give all response packets a length
 

@@ -23,7 +23,7 @@ class_has 'SUCCESS' => ( is => 'ro', default => 0 );
 class_has 'FAIL'    => ( is => 'ro', default => -1 );
 
 class_has 'CMD_OUT_EP' => ( is => 'rw', default => 0x1 );
-class_has 'CMD_IN_EP'  => ( is => 'rw', default => 0x1 );
+class_has 'CMD_IN_EP'  => ( is => 'rw', default => 0x81 );
 #
 # Instance Attributes
 has 'dev' => (
@@ -89,7 +89,7 @@ sub connect {
   }
 
   if ( !defined $dev ) {
-    print "ERROR: could not find any Tek devices \n";
+    print "ERROR: could not find any AttenSwitch devices \n";
     return AttenSwitch->FAIL;
   }
 
@@ -167,7 +167,7 @@ sub send_packet {
     }
   }
 
-  return ( Tek::LE320->FAIL, $rxPacket );
+  return ( AttenSwitch->FAIL, $rxPacket );
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -178,7 +178,7 @@ use Moose;
 use namespace::autoclean;
 
 has proto_version => ( is => 'rw', isa => 'Int', default => 1 );
-has command => ( is => 'rw', isa => AttenSwitch::COMMAND, predicate => 'has_command' );
+has command => ( is => 'rw', isa => "AttenSwitch::COMMAND", predicate => 'has_command' );
 has payload => ( is => 'rw', isa => 'Str', predicate => 'has_payload' );
 has packet => ( is => 'rw', isa => 'Str' );
 
@@ -190,14 +190,14 @@ sub BUILD {
   $self->make() if ( $self->has_command() && $self->has_payload() );
 }
 
-ub make {
+sub make {
   my $self    = shift;
   my $command = shift;    #AttenSwitch::COMMAND
   my $payload = shift;    #String of bytes
 
   if ( defined($command)
     && ref($command)
-    && $command->isa("Tek::LE320::COMMAND") )
+    && $command->isa("AttenSwitch::COMMAND") )
   {
     $self->command($command);
   }
@@ -207,7 +207,7 @@ ub make {
   }
 
   if ( $self->has_command() && $self->has_payload() ) {
-    $self->packet( pack( "CC", length( $self->payload ) + 4, $self->command->ordinal ) );
+    $self->packet( pack( "CvC", 1, length( $self->payload ) + 6, $self->command->ordinal ) );
     $self->packet( $self->packet . pack( "v", $self->cksum_simple( $self->payload ) ) );
     $self->packet( $self->packet . $self->payload );
   }
@@ -221,10 +221,11 @@ sub from_bytes {
     $self->packet($packet);
   }
 
-  my $len = unpack( 'C', substr( $self->packet, 0, 1 ) );
-  my $cmd = unpack( 'C', substr( $self->packet, 1, 1 ) );
-  my $sum = unpack( 'v', substr( $self->packet, 2, 2 ) );
-  $self->payload( substr( $self->packet, 4 ) );
+  my $ver = unpack( 'C', substr( $self->packet, 0, 1 ) );
+  my $len = unpack( 'v', substr( $self->packet, 1, 2 ) );
+  my $cmd = unpack( 'C', substr( $self->packet, 3, 1 ) );
+  my $sum = unpack( 'v', substr( $self->packet, 4, 2 ) );
+  $self->payload( substr( $self->packet, 6 ) );
   $self->command( AttenSwitch::COMMAND->from_ordinal($cmd) );
 }
 
@@ -245,9 +246,12 @@ sub dump {
 
   my $pkt   = $self->payload;
   my $ascii = "";
-  my $len   = unpack( 'C', substr( $self->packet, 0, 1 ) );
-  my $sum   = unpack( 'v', substr( $self->packet, 2, 2 ) );
 
+  my $ver = unpack( 'C', substr( $self->packet, 0, 1 ) );
+  my $len = unpack( 'v', substr( $self->packet, 1, 2 ) );
+  my $sum = unpack( 'v', substr( $self->packet, 4, 2 ) );
+
+  printf( "Ver: %d\n", $ver);
   printf( "Len: %d\n",   $len );
   printf( "Cmd: %s\n",   $self->command->name );
   printf( "Sum: 0x%x\n", $sum );

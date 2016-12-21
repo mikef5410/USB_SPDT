@@ -8,10 +8,11 @@ xTaskHandle *xLED1TaskHandle;
 xTaskHandle *xStackTaskHandle;
 xTaskHandle *xUSBCDCACMTaskHandle;
 xTaskHandle *xDebugShellTaskHandle;
+xTaskHandle *xInstrumentTaskHandle;
 
 extern portTASK_FUNCTION(vUSBCDCACMTask, pvParameters); //in cdcacm.c
 extern portTASK_FUNCTION(vStackTask, pvParamaters);
-
+extern portTASK_FUNCTION(vInstrumentTask, pvParameters);
 static portTASK_FUNCTION(vLEDTask1, pvParameters)
 {
   (void)(pvParameters);//unused params
@@ -71,6 +72,9 @@ int main(void)
 
   qStatus = xTaskCreate(vDebugShell, "Debug shell", 1024, NULL, (tskIDLE_PRIORITY + 1UL),
                         (xTaskHandle *) &xDebugShellTaskHandle);
+
+  qStatus = xTaskCreate(vInstrumentTask, "Instrument task", 1024, NULL,  (tskIDLE_PRIORITY + 1UL),
+                        (xTaskHandle *) &xInstrumentTaskHandle);
   
   (void) qStatus;
 

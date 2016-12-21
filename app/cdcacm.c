@@ -268,22 +268,19 @@ static void bulkctrl_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
 {
   (void)ep;
 
-  cmdflow_t flow = FLOW_USB;
   portBASE_TYPE rval;
   portBASE_TYPE pxHigherPriTaskWoken;
   
-  char buf[64];
+  char buf[65];
+  buf[0]=(uint8_t)FLOW_USB;
 
-  int len = usbd_ep_read_packet(usbd_dev, 0x01, buf, 64);
-
-        
+  int len = usbd_ep_read_packet(usbd_dev, 0x01, buf+1, 64);
   if (len) {
-    rval=xQueueSendFromISR(CTRLinQ,(uint8_t *)&flow,&pxHigherPriTaskWoken); //Enqueue the flow indicator
-    for (int j = 0; j<len; j++) { // and now the incoming packet
-      rval=xQueueSendFromISR(CTRLinQ,&(buf[j]),&pxHigherPriTaskWoken);
-      (void)rval;
-      //if (rval != pdTRUE) { queue was full; }
-    }
+    redOn(1);delayms(5);redOn(0);
+    rval=xQueueSendFromISR(CTRLinQ,&buf,&pxHigherPriTaskWoken);
+    (void)pxHigherPriTaskWoken;
+    (void)rval;
+    //if (rval != pdTRUE) { queue was full; }
   }
 }
 
@@ -302,7 +299,6 @@ static void cdcacm_set_config(usbd_device *usbd_dev, uint16_t wValue)
   usbd_ep_setup(usbd_dev, 0x01, USB_ENDPOINT_ATTR_BULK, 64,
                 bulkctrl_data_rx_cb);
   usbd_ep_setup(usbd_dev, 0x81, USB_ENDPOINT_ATTR_BULK, 64, NULL);
-  
 
   usbd_register_control_callback(
                                  usbd_dev,
@@ -333,7 +329,7 @@ portTASK_FUNCTION(vUSBCDCACMTask, pvParameters)
   (void)(pvParameters);//unused params
 
   UARTinQ = xQueueCreate( 256, sizeof(char));
-  CTRLinQ = xQueueCreate( 256, sizeof(char));
+  CTRLinQ = xQueueCreate( 2, sizeof(cmd_packet_t));
 
   //Descriptors
   desig_get_unique_id_as_string(id,24); //Copy device SN to USB reported SN

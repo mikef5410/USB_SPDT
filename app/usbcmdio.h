@@ -125,6 +125,7 @@ extern "C" {
 
   //Packet has a flow indicator of type cmdflow_t but a packet on the wire doesn't have this field.
   //It's added by the receiver ...
+  // Max packet size is 64 bytes on wire, payload is 58 bytes
   typedef struct  __attribute__((__packed__)) {
     uint8_t  flow;
     uint8_t  version;   // Protocol version
@@ -132,11 +133,11 @@ extern "C" {
     uint8_t  cmd;      // one byte
     uint16_t checksum;  // two bytes computed with checksum field=0
     union {
-      uint8_t               *asBytes;
+      uint8_t               asBytes[58];
       payload_id_response_t id_resp;
       payload_ssn_t         pl_ssn;  //  ssn_resp;
       payload_bool_t        pl_bool;
-      payload_char_t        pl_char;   // set/get 1 char
+      payload_char_t        pl_char;   // set/get 1 c
       payload_uchar_t       pl_uchar;  // set/get 1 uchar
       payload_int16_t       pl_int16;  // set/get 1 int16 ...
       payload_uint16_t      pl_uint16; // set/get 1 uint16 ..
