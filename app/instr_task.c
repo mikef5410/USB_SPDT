@@ -1,15 +1,15 @@
 /*******************************************************************************
-* Copyright (C) 2016 Mike Ferrara (mikef@mrf.sonoma.ca.us), All rights reserved.
-*
-*
-* Filename:     instr_task.c
-*
-* Description: INSTR_TASK
-*   
-* This task de-queues packets from the CTRLinQ, dispatches based on command
-* field, executes the command and acknowledges by queueing up a response packet.
-* 
-*******************************************************************************/
+ * Copyright (C) 2016 Mike Ferrara (mikef@mrf.sonoma.ca.us), All rights reserved.
+ *
+ *
+ * Filename:     instr_task.c
+ *
+ * Description: INSTR_TASK
+ *   
+ * This task de-queues packets from the CTRLinQ, dispatches based on command
+ * field, executes the command and acknowledges by queueing up a response packet.
+ * 
+ *******************************************************************************/
 //#define TRACE_PRINT 1
 
 #include "OSandPlatform.h"
@@ -92,6 +92,9 @@ __attribute__((noreturn)) portTASK_FUNCTION(vInstrumentTask, pvParameters) {
   int32_t rval = 0;
   portTickType waitIfFull = 10;
   attenSetting_t atten;
+  spdtSel_t swSel;
+  spdtSetting_t swState;
+  sp8tSel_t muxSel;
   
   bzero(instrInpktBuf, sizeof(inbufBytes));  // null the storage of the packets
   bzero(instrOutpktBuf,sizeof(outbufBytes));
@@ -106,37 +109,40 @@ __attribute__((noreturn)) portTASK_FUNCTION(vInstrumentTask, pvParameters) {
     } else {
       instrOutpktBuf->version = 1;
       instrOutpktBuf->cmd = CMD_ACK; // default all packets to ACK-type
-      instrOutpktBuf->length = htole16(USB_PKT_MIN_HEADER_SZ); // give all response packets a length
-
-      
+      instrOutpktBuf->length = htole16(USB_PKT_MIN_HEADER_SZ); // give all response packets a length      
       switch (instrInpktBuf->cmd) {
       case CMD_ACK:
-        writePacket(instrOutpktBuf,waitIfFull);
         break;
 
       case CMD_NAK:
-        writePacket(instrOutpktBuf,waitIfFull);
         break;
 
       case CMD_ECHO:
         copyPacket(instrInpktBuf, instrOutpktBuf);
-        writePacket(instrOutpktBuf,waitIfFull); // reuse input checksum !
         break;
 
       case CMD_ATT: //Payload is a 16-bit integer representing attenSetting_t enum
         atten = (attenSetting_t)le16toh(instrInpktBuf->payload.pl_uint16.a_uint16);
         setAttenSetting(atten);
-        
-        writePacket(instrOutpktBuf,waitIfFull); // reuse input checksum !
         break;
+
+      case CMD_SPDT: //Payload is two bytes: { SW1|SW2, J1|J2 }
+        swSel = (spdtSel_t)instrInpktBuf->payload.pl_2uchar.uchar1;
+        swState = (spdtSetting_t)instrInpktBuf->payload.pl_2uchar.uchar2;
+        spdt_set(swSel, swState);
+        break;
+
+      case CMD_SP8T: //Payload is one byte {J1|J2|J3|J4|J5|J6|J7|J8}
+        muxSel = (sp8tSel_t)instrInpktBuf->payload.pl_uchar.a_uchar;
+        setSP8T(muxSel);
 
       default:
         dprintf("ERROR: unrecognized or NYI command: %u\r\n",instrInpktBuf->cmd);
         instrOutpktBuf->cmd = CMD_NAK;
-        writePacket(instrOutpktBuf,waitIfFull);
         break;
 
       } //cmd dispatcher switch
+      writePacket(instrOutpktBuf,waitIfFull);
     } // if received a packet
   } // while true
 } //instrument task thread

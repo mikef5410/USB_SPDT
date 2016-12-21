@@ -57,6 +57,9 @@ extern "C" {
 #include "hiresTimer.h"
 #include "usbcmdio.h"
 #include "atten.h"
+#include "spdtAux.h"
+#include "sp8t.h"
+
 #define TESTEEPROM 1
 #include "eeprom9366.h"
   

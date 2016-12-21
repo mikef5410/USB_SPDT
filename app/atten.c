@@ -11,7 +11,6 @@
 *******************************************************************************/
 //#define TRACE_PRINT 1
 #include "OSandPlatform.h"
-#include "usbcmdio.h"
 
 #define GLOBAL_ATTEN
 #include "atten.h"

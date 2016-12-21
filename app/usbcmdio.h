@@ -38,6 +38,7 @@ extern "C" {
     CMD_NOTIFY,     // 12 0x0C  blink light (4 bytes: R|Y|G|OFF, on time, off time, count)
     CMD_READEE,     // 13 0x0D  read one byte of EEprom, 2-byte address (LE)
     CMD_WRITEEE,    // 14 0x0E  write one byte of EEprom, 2-byte address (LE), 1 byte data
+    CMD_SPDT,       // 15 0x0F  set one of two spdts, 2 bytes { SW1 | SW2, J1|J2 }
   } pkttype_t;
 
   typedef enum {
@@ -50,12 +51,33 @@ extern "C" {
     ATT_60DB,
     ATT_70DB
   } attenSetting_t; 
-    
+
+  typedef enum {
+    J1SEL=0,
+    J2SEL
+  } spdtSetting_t;
+
+  typedef enum {
+    SW1 = 0,
+    SW2
+  } spdtSel_t;
+  
   typedef enum {
     FLOW_USB = 0,
     FLOW_KBD,
     FLOW_DEBUGSHELL,
   } cmdflow_t;
+
+  typedef enum {
+    J1 = 0,
+    J2,
+    J3,
+    J4,
+    J5,
+    J6,
+    J7,
+    J8
+  } sp8tSel_t;
   
   // define some generic payloads for parameterized commands
   //   For example, RESET now takes an argument for type of reset
@@ -143,6 +165,7 @@ extern "C" {
       payload_uint16_t      pl_uint16; // set/get 1 uint16 ..
       payload_int32_t       pl_int32;
       payload_uint32_t      pl_uint32;
+      payload_2uchar_t      pl_2uchar;
     } payload;
   } cmd_packet_t;
 
