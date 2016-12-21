@@ -17,8 +17,6 @@
 #define GLOBAL_INSTR_TASK
 #include "instr_task.h"
 
-#include "usbcmdio.h"
-
 // #define RX_QUEUE_DEBUG 1
 // #define TX_QUEUE_DEBUG 1
 extern usbd_device *CDCACM_dev; //cdcacm.c
@@ -36,7 +34,7 @@ static int32_t readPacket(cmd_packet_t *buffer)
 
   q_rx_stat = xQueueReceive(CTRLinQ, buffer, portMAX_DELAY);
   if (q_rx_stat == pdPASS) {
-    rval = buffer->length;
+    rval = le16toh(buffer->length);
           
 #ifdef RX_QUEUE_DEBUG
     myprintf("Rx dequeue: %d bytes \r\n", rval);
@@ -58,29 +56,30 @@ static int32_t writePacket(cmd_packet_t *buff, portTickType TMO)
   sums.Checksum2=0;
 
   //compute checksum, send packet
+  redOn(1);
   buff->checksum=0;
-  for (j=1; j<(buff->length-1); j++) {
+  for (j=1; j<(le16toh(buff->length)-1); j++) {
     FLETCH(&sums,buffbytes[j]);
   }
   buff->checksum = (uint16_t) sums.Checksum2*256 + sums.Checksum1;
 
   if (TMO==0) timeLeft=10;
-  rval=usbd_ep_write_packet(CDCACM_dev, 0x81, buffbytes+1, buff->length); //skip the flow byte
+  rval=usbd_ep_write_packet(CDCACM_dev, 0x81, buffbytes+1, le16toh(buff->length)); //skip the flow byte
   while (rval==0 && timeLeft>1) {
     if (rval == 0) {
       delayms(1);
       if (TMO) timeLeft-=1;
     }
-    rval=usbd_ep_write_packet(CDCACM_dev, 0x81, buffbytes+1, buff->length); //skip the flow byte
+    rval=usbd_ep_write_packet(CDCACM_dev, 0x81, buffbytes+1, le16toh(buff->length)); //skip the flow byte
   }
-
+  redOn(0);
   return(rval);
 }
 
 // this method supports the ECHO command, in the dispatcher
 static void copyPacket(cmd_packet_t *inBuf, cmd_packet_t *outBuf) {
   if ((inBuf != NULL) && (outBuf != NULL)) {
-    int sz = inBuf->length + 1;
+    int sz = le16toh(inBuf->length) + 1;
     if ((sz > 0) && (sz < 248)) {   // 248 = limit of regio values array
       memcpy(outBuf, inBuf, sz);
     }
@@ -92,6 +91,7 @@ __attribute__((noreturn)) portTASK_FUNCTION(vInstrumentTask, pvParameters) {
   (void)pvParameters;
   int32_t rval = 0;
   portTickType waitIfFull = 10;
+  attenSetting_t atten;
   
   bzero(instrInpktBuf, sizeof(inbufBytes));  // null the storage of the packets
   bzero(instrOutpktBuf,sizeof(outbufBytes));
@@ -106,7 +106,7 @@ __attribute__((noreturn)) portTASK_FUNCTION(vInstrumentTask, pvParameters) {
     } else {
       instrOutpktBuf->version = 1;
       instrOutpktBuf->cmd = CMD_ACK; // default all packets to ACK-type
-      instrOutpktBuf->length = USB_PKT_MIN_HEADER_SZ; // give all response packets a length
+      instrOutpktBuf->length = htole16(USB_PKT_MIN_HEADER_SZ); // give all response packets a length
 
       
       switch (instrInpktBuf->cmd) {
@@ -120,6 +120,13 @@ __attribute__((noreturn)) portTASK_FUNCTION(vInstrumentTask, pvParameters) {
 
       case CMD_ECHO:
         copyPacket(instrInpktBuf, instrOutpktBuf);
+        writePacket(instrOutpktBuf,waitIfFull); // reuse input checksum !
+        break;
+
+      case CMD_ATT: //Payload is a 16-bit integer representing attenSetting_t enum
+        atten = (attenSetting_t)le16toh(instrInpktBuf->payload.pl_uint16.a_uint16);
+        setAttenSetting(atten);
+        
         writePacket(instrOutpktBuf,waitIfFull); // reuse input checksum !
         break;
 

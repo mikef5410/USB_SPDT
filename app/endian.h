@@ -23,13 +23,14 @@
 extern "C" {
 #endif 
 
+#ifndef __MACHINE_ENDIAN_H__
 
 // #define	LITTLE_ENDIAN	1234	/* LSB first: i386, vax */
 // #define	BIG_ENDIAN	4321	/* MSB first: 68000, ibm, net */
 // #define	PDP_ENDIAN	3412	/* LSB first in word, MSW first in long */
-
+  
 #if __MICROBLAZE__
-#define BYTE_ORDER BIG_ENDIAN
+#define BYTE_ORDER _BIG_ENDIAN
 #if 0
 #define uint8_t  unsigned char
 #define uint32_t unsigned long
@@ -40,7 +41,7 @@ extern "C" {
 #endif
 
 #ifdef __STM32__
-#define BYTE_ORDER LITTLE_ENDIAN
+#define BYTE_ORDER _LITTLE_ENDIAN
 #define uint8_t  unsigned short
 #define uint16_t unsigned int
 #define uint32_t unsigned long
@@ -48,7 +49,7 @@ extern "C" {
 #endif
 
 #ifdef __NXP__
-#define BYTE_ORDER LITTLE_ENDIAN
+#define BYTE_ORDER _LITTLE_ENDIAN
 #define uint8_t  unsigned short
 #define uint16_t unsigned int
 #define uint32_t unsigned long
@@ -56,7 +57,7 @@ extern "C" {
 #endif
 
 #if ( __i386__ || __x86_64__ )
-#define BYTE_ORDER LITTLE_ENDIAN
+#define BYTE_ORDER _LITTLE_ENDIAN
 #define uint8_t  unsigned char
 #define uint32_t unsigned long
 #define uint16_t unsigned short
@@ -66,7 +67,7 @@ extern "C" {
 //run-time check
 //const int i = 1;
 //#define is_bigendian() ( (*(char*)&i) == 0 )
-
+#endif //__MACHINE_ENDIAN_H__
 
 static inline uint32_t bswap32(uint32_t x)
 {

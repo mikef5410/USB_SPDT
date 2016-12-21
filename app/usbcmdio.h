@@ -49,7 +49,7 @@ extern "C" {
     ATT_50DB,
     ATT_60DB,
     ATT_70DB
-  } attenSetting_t;
+  } attenSetting_t; 
     
   typedef enum {
     FLOW_USB = 0,

@@ -276,8 +276,9 @@ static void bulkctrl_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
 
   int len = usbd_ep_read_packet(usbd_dev, 0x01, buf+1, 64);
   if (len) {
-    redOn(1);delayms(5);redOn(0);
+    redOn(1);
     rval=xQueueSendFromISR(CTRLinQ,&buf,&pxHigherPriTaskWoken);
+    redOn(0);
     (void)pxHigherPriTaskWoken;
     (void)rval;
     //if (rval != pdTRUE) { queue was full; }

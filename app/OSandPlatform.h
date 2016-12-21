@@ -39,7 +39,7 @@ extern "C" {
 #include <strings.h>
 #include <limits.h>
 #include <malloc.h>
-
+#include <machine/endian.h> // /opt/gcc-arm-none-eabi-5_4-2016q3/arm-none-eabi/include/machine
 
 #include <libopencmsis/core_cm3.h>
 #include <libopencm3/stm32/gpio.h>
@@ -52,8 +52,10 @@ extern "C" {
 #include <libopencm3/stm32/desig.h>
 #include <libopencm3/stm32/spi.h>
 
+#include "endian.h"
 #include "bsp.h"  
 #include "hiresTimer.h"
+#include "usbcmdio.h"
 #include "atten.h"
 #define TESTEEPROM 1
 #include "eeprom9366.h"

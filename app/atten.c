@@ -10,11 +10,12 @@
 *
 *******************************************************************************/
 //#define TRACE_PRINT 1
+#include "OSandPlatform.h"
+#include "usbcmdio.h"
 
 #define GLOBAL_ATTEN
 #include "atten.h"
 
-#include "OSandPlatform.h"
 
 //Atten is 10,20,20,20
 //UP adds attenuation. DOWN removes it
@@ -108,6 +109,45 @@ void setAtten(int attenuation) {
   s2(s2_att[attenuation]==0);
   s3(s3_att[attenuation]==0);
   s4(s4_att[attenuation]==0);
+  return;
+}
+
+void setAttenSetting(attenSetting_t att) {
+  int attenIndex=0;
+  
+  switch (att) {
+  case ATT_0DB:
+    attenIndex=0;
+    break;
+  case ATT_10DB:
+    attenIndex=1;
+    break;
+  case ATT_20DB:
+    attenIndex=2;
+    break;
+  case ATT_30DB:
+    attenIndex=3;
+    break;
+  case ATT_40DB:
+    attenIndex=4;
+    break;
+  case ATT_50DB:
+    attenIndex=5;
+    break;
+  case ATT_60DB:
+    attenIndex=6;
+    break;
+  case ATT_70DB:
+    attenIndex=7;
+    break;
+  default:
+    attenIndex=7;
+  }
+
+  s1(s1_att[attenIndex]==0);
+  s2(s2_att[attenIndex]==0);
+  s3(s3_att[attenIndex]==0);
+  s4(s4_att[attenIndex]==0);
   return;
 }
 
