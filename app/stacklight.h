@@ -40,9 +40,9 @@
 #define ON 1
 #define OFF 0
 
-#define R 1
-#define Y 2
-#define G 3
+#define R 0x1
+#define Y 0x2
+#define G 0x4
 
 STACKLIGHTGLOBAL void stackRed(int on);
 STACKLIGHTGLOBAL void stackYel(int on);

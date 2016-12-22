@@ -35,7 +35,7 @@ extern "C" {
     CMD_AUXIN,      // 09 0x09  read aux in bits
     CMD_ATT,        // 10 0x0A  set attenuation (one byte, enum)
     CMD_LIGHT,      // 11 0x0B  set stacklight static (one byte, bitmapped)
-    CMD_NOTIFY,     // 12 0x0C  blink light (4 bytes: R|Y|G|OFF, on time, off time, count)
+    CMD_NOTIFY,     // 12 0x0C  blink light (1 bytes: R|Y|G|OFF, long on time, long off time, long count)
     CMD_READEE,     // 13 0x0D  read one byte of EEprom, 2-byte address (LE)
     CMD_WRITEEE,    // 14 0x0E  write one byte of EEprom, 2-byte address (LE), 1 byte data
     CMD_SPDT,       // 15 0x0F  set one of two spdts, 2 bytes { SW1 | SW2, J1|J2 }
@@ -78,7 +78,14 @@ extern "C" {
     J7,
     J8
   } sp8tSel_t;
-  
+
+  typedef enum {
+    OFF = 0,
+    RED = 1,
+    YEL = 2,
+    GRN = 4
+  } stacklightColor_t;
+      
   // define some generic payloads for parameterized commands
   //   For example, RESET now takes an argument for type of reset
   typedef struct __attribute__((__packed__)) {
@@ -126,7 +133,7 @@ extern "C" {
     uint16_t uint3;
   } payload_3uint16_t;
 
-  typedef struct {            // size description
+  typedef struct __attribute__((__packed__)) {            // size description
     uint8_t  productID;       // 1    start at 1
     uint8_t  protocolVersion; // 1    Must be 0x01 !!
     uint8_t  fwRev_major;     // 1    start at 00
@@ -141,7 +148,14 @@ extern "C" {
     uint8_t  bld_info [220];  // up to 220 chars, null-term
   } payload_id_response_t;
 
-  typedef struct {        // SSN: silicon serial number
+  typedef struct  __attribute__((__packed__)) {
+    uint8_t color;
+    uint32_t onTime;
+    uint32_t offTime;
+    uint32_t count;
+  } payload_notifyLight_t;
+  
+  typedef struct __attribute__((__packed__)) {        // SSN: silicon serial number
     uint32_t ssn_values[3]; // zero-fill unused bits, little-endian
   } payload_ssn_t;
 
@@ -166,6 +180,7 @@ extern "C" {
       payload_int32_t       pl_int32;
       payload_uint32_t      pl_uint32;
       payload_2uchar_t      pl_2uchar;
+      payload_notifyLight_t pl_notifyLight;
     } payload;
   } cmd_packet_t;
 

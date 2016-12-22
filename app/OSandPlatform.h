@@ -59,7 +59,8 @@ extern "C" {
 #include "atten.h"
 #include "spdtAux.h"
 #include "sp8t.h"
-
+#include "stacklight.h"
+  
 #define TESTEEPROM 1
 #include "eeprom9366.h"
   

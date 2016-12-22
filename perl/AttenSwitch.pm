@@ -6,6 +6,8 @@ use Moose::Exporter;
 use MooseX::ClassAttribute;
 
 use namespace::autoclean;
+## no critic (BitwiseOperators)
+## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
 
 #
 # Class Attributes
@@ -204,6 +206,27 @@ sub atten {
   my $outPkt = AttenSwitch::Packet->new(
     command => AttenSwitch::COMMAND->ATT,
     payload => pack( "C", $sel->ordinal )
+  );
+
+  my ( $res, $rxPacket ) = $self->send_packet($outPkt);
+  return ($res);
+}
+
+sub stacklightNotify {
+  my $self    = shift;
+  my $color   = uc(shift);
+  my $onTime  = shift || 0;
+  my $offTime = shift || 0;
+  my $count   = shift || 0;
+
+  my $col = 0;
+  $col |= 0x1 if ( $color =~ /R/ );
+  $col |= 0x2 if ( $color =~ /Y/ );
+  $col |= 0x4 if ( $color =~ /G/ );
+
+  my $outPkt = AttenSwitch::Packet->new(
+    command => AttenSwitch::COMMAND->NOTIFY,
+    payload => pack( "CVVV", $col, $onTime, $offTime, $count )
   );
 
   my ( $res, $rxPacket ) = $self->send_packet($outPkt);

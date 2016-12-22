@@ -66,7 +66,7 @@ int main(void)
                         (xTaskHandle *) &xStackTaskHandle);
 
 
-  delayms(150);
+  delayms(10);
   qStatus = xTaskCreate(vUSBCDCACMTask, "USB Serial Task", 256, NULL, (tskIDLE_PRIORITY + 1UL),
                         (xTaskHandle *) &xUSBCDCACMTaskHandle);
 
