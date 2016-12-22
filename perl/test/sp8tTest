@@ -4,6 +4,7 @@
 use strict;
 use warnings;
 use feature qw(switch);
+no warnings 'experimental';
 
 #Where to find our library and auxiliary code.
 use FindBin qw($Bin);
@@ -37,5 +38,5 @@ given ($sw) {
 }
 
 $dut->sp8t($swSel);
-
+printf("ok\n");
 exit;
