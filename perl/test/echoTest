@@ -13,20 +13,22 @@ use lib "$Bin";
 
 use AttenSwitch;
 
-my $dut = AttenSwitch->new();
+my $dut    = AttenSwitch->new();
 my $result = $dut->connect();
-if ($result == AttenSwitch::SUCCESS) {
+if ( $result == AttenSwitch::SUCCESS ) {
   print("Got device\n");
 }
 
-my $outPkt = AttenSwitch::Packet->new(command=>AttenSwitch::COMMAND->ECHO,
-                                      payload=>"ABCDEF");
+my $outPkt = AttenSwitch::Packet->new(
+  command => AttenSwitch::COMMAND->ECHO,
+  payload => "ABCDEF"
+);
 
 print("Sending:\n");
 $outPkt->dump();
 
-my ($res,$rpkt) = $dut->send_packet($outPkt);
-printf("Got result: %s\n",$res==AttenSwitch::SUCCESS?"SUCCESS":"FAIL");
+my ( $res, $rpkt ) = $dut->send_packet($outPkt);
+printf( "Got result: %s\n", $res == AttenSwitch::SUCCESS ? "SUCCESS" : "FAIL" );
 printf("Receive packet:\n");
 $rpkt->dump();
 

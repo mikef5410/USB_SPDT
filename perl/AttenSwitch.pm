@@ -171,16 +171,44 @@ sub send_packet {
 }
 
 sub sp8t {
-  my $self=shift;
-  my $sel = shift; #AttenSwitch::SP8TSETTING
+  my $self = shift;
+  my $sel  = shift;    #AttenSwitch::SP8TSETTING
 
-  my $outPkt=AttenSwitch::Packet->new(command=>AttenSwitch::COMMAND->SP8T,
-                                      payload=>pack("C",$sel->ordinal));
+  my $outPkt = AttenSwitch::Packet->new(
+    command => AttenSwitch::COMMAND->SP8T,
+    payload => pack( "C", $sel->ordinal )
+  );
 
-  my ($res,$rxPacket) = $self->send_packet($outPkt);
-  return($res);
+  my ( $res, $rxPacket ) = $self->send_packet($outPkt);
+  return ($res);
 }
-  
+
+sub spdt {
+  my $self = shift;
+  my $sw   = shift;    #AttenSwitch::SPDTSEL
+  my $set  = shift;    #AttenSwitch::SPDTSETTING
+
+  my $outPkt = AttenSwitch::Packet->new(
+    command => AttenSwitch::COMMAND->SPDT,
+    payload => pack( "CC", $sw->ordinal, $set->ordinal )
+  );
+
+  my ( $res, $rxPacket ) = $self->send_packet($outPkt);
+  return ($res);
+}
+
+sub atten {
+  my $self = shift;
+  my $sel  = shift;    #AttenSwitch::ATTEN
+
+  my $outPkt = AttenSwitch::Packet->new(
+    command => AttenSwitch::COMMAND->ATT,
+    payload => pack( "C", $sel->ordinal )
+  );
+
+  my ( $res, $rxPacket ) = $self->send_packet($outPkt);
+  return ($res);
+}
 
 __PACKAGE__->meta->make_immutable;
 1;
@@ -189,10 +217,10 @@ package AttenSwitch::Packet;
 use Moose;
 use namespace::autoclean;
 
-has proto_version => ( is => 'rw', isa => 'Int', default => 1 );
-has command => ( is => 'rw', isa => "AttenSwitch::COMMAND", predicate => 'has_command' );
-has payload => ( is => 'rw', isa => 'Str', predicate => 'has_payload' );
-has packet => ( is => 'rw', isa => 'Str' );
+has proto_version => ( is => 'rw', isa => 'Int',                  default   => 1 );
+has command       => ( is => 'rw', isa => "AttenSwitch::COMMAND", predicate => 'has_command' );
+has payload       => ( is => 'rw', isa => 'Str',                  predicate => 'has_payload' );
+has packet        => ( is => 'rw', isa => 'Str' );
 
 #Called right after object construction so we can say:
 # $obj=AttenSwitch::Packet->new(command=>$command,payload=>$payload);
@@ -263,7 +291,7 @@ sub dump {
   my $len = unpack( 'v', substr( $self->packet, 1, 2 ) );
   my $sum = unpack( 'v', substr( $self->packet, 4, 2 ) );
 
-  printf( "Ver: %d\n", $ver);
+  printf( "Ver: %d\n",   $ver );
   printf( "Len: %d\n",   $len );
   printf( "Cmd: %s\n",   $self->command->name );
   printf( "Sum: 0x%x\n", $sum );
