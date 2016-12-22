@@ -28,19 +28,16 @@ void setSP8T(sp8tSel_t sel) {
   gpio_clear(S4D);
   switch (sel) {
   case J1:
-    myprintf("J1\n");
     gpio_set(S1U);
     delayms(SP8T_DELAY);
     gpio_clear(S1U);
     break;
   case J2:
-    myprintf("J2\n");
     gpio_set(S2U);
     delayms(SP8T_DELAY);
     gpio_clear(S2U);
     break;
   case J3:
-    myprintf("J3\n");
     gpio_set(S3U);
     delayms(SP8T_DELAY);
     gpio_clear(S3U);
