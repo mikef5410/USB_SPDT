@@ -135,7 +135,8 @@ __attribute__((noreturn)) portTASK_FUNCTION(vInstrumentTask, pvParameters) {
       case CMD_SP8T: //Payload is one byte {J1|J2|J3|J4|J5|J6|J7|J8}
         muxSel = (sp8tSel_t)instrInpktBuf->payload.pl_uchar.a_uchar;
         setSP8T(muxSel);
-
+        break;
+        
       default:
         dprintf("ERROR: unrecognized or NYI command: %u\r\n",instrInpktBuf->cmd);
         instrOutpktBuf->cmd = CMD_NAK;

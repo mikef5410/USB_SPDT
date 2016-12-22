@@ -170,6 +170,18 @@ sub send_packet {
   return ( AttenSwitch->FAIL, $rxPacket );
 }
 
+sub sp8t {
+  my $self=shift;
+  my $sel = shift; #AttenSwitch::SP8TSETTING
+
+  my $outPkt=AttenSwitch::Packet->new(command=>AttenSwitch::COMMAND->SP8T,
+                                      payload=>pack("C",$sel->ordinal));
+
+  my ($res,$rxPacket) = $self->send_packet($outPkt);
+  return($res);
+}
+  
+
 __PACKAGE__->meta->make_immutable;
 1;
 
@@ -303,7 +315,7 @@ __PACKAGE__->meta->make_immutable;
 package AttenSwitch::COMMAND;
 use Class::Enum qw(ACK NAK RESET ID ECHO SSN DIAG SP8T
   AUXOUT AUXIN ATT LIGHT NOTIFY READEE
-  WRITEEE
+  WRITEEE SPDT
 );
 1;
 
@@ -320,3 +332,14 @@ package AttenSwitch::MODEL;
 use Class::Enum qw(MODEL_UNKNOWN ATTEN70 SP8T STACKLIGHT SPDT );
 1;
 
+package AttenSwitch::SPDTSETTING;
+use Class::Enum qw(J1SEL J2SEL);
+1;
+
+package AttenSwitch::SPDTSEL;
+use Class::Enum qw(SW1 SW2);
+1;
+
+package AttenSwitch::SP8TSETTING;
+use Class::Enum qw(J1 J2 J3 J4 J5 J6 J7 J8);
+1;
