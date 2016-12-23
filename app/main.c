@@ -48,7 +48,7 @@ int main(void)
 
 
   redOn(1); greenOn(1);
-  Delay(0x8FFFFF);
+  Delay(0x1FFFFF);
   redOn(0); greenOn(0);
 
   init_hiresTimer();
@@ -58,6 +58,10 @@ int main(void)
   
   // Create tasks
   // remember, stack size is in 32-bit words and is allocated from the heap ...
+
+  qStatus = xTaskCreate(vUSBCDCACMTask, "USB Serial Task", 256, NULL, (tskIDLE_PRIORITY + 1UL),
+                        (xTaskHandle *) &xUSBCDCACMTaskHandle);
+
   qStatus = xTaskCreate(vLEDTask1, "LED Task 1", 64, NULL, (tskIDLE_PRIORITY + 1UL),
                         (xTaskHandle *) &xLED1TaskHandle);
 
@@ -65,10 +69,6 @@ int main(void)
   qStatus = xTaskCreate(vStackTask, "Stacklight", 128, NULL, (tskIDLE_PRIORITY + 1UL),
                         (xTaskHandle *) &xStackTaskHandle);
 
-
-  delayms(10);
-  qStatus = xTaskCreate(vUSBCDCACMTask, "USB Serial Task", 256, NULL, (tskIDLE_PRIORITY + 1UL),
-                        (xTaskHandle *) &xUSBCDCACMTaskHandle);
 
   qStatus = xTaskCreate(vDebugShell, "Debug shell", 1024, NULL, (tskIDLE_PRIORITY + 1UL),
                         (xTaskHandle *) &xDebugShellTaskHandle);

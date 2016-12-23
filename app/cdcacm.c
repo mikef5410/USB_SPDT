@@ -201,7 +201,7 @@ static const struct usb_config_descriptor config = {
   .bConfigurationValue = 1,
   .iConfiguration = 0,
   .bmAttributes = 0x80,
-  .bMaxPower = 0x32,
+  .bMaxPower = 0x64, //200mA
 
   .interface = ifaces,
 };
@@ -345,21 +345,30 @@ portTASK_FUNCTION(vUSBCDCACMTask, pvParameters)
   //Take the semaphore nonblocking to ensure in the correct state
   xSemaphoreTake(usbInterrupted,0);
 
-
-
-  
+ AGAIN:
+  nvic_disable_irq(NVIC_OTG_FS_IRQ);
   usbd_dev = usbd_init(&stm32f411_usb_driver, &dev, &config,
                        usb_strings, 3,
                        usbd_control_buffer, sizeof(usbd_control_buffer));
 
-  nvic_disable_irq(NVIC_OTG_FS_IRQ);
+  CDCACM_dev=usbd_dev;
   usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
 
   
   nvic_set_priority(NVIC_OTG_FS_IRQ,0xdf);
-  nvic_enable_irq(NVIC_OTG_FS_IRQ);
+
   
-  CDCACM_dev=usbd_dev;
+  uint32_t cnt = 0;
+  while(!USBConfigured) { //Handle setup packets polled, tight loop
+    usbd_poll(usbd_dev);
+    delayms(4);
+    if (cnt++ >= 250) { //Not configured yet??
+      goto AGAIN; //Re-initialize USB
+    }
+  }
+
+  //Now handle normal USB traffic with interrupts.
+  nvic_enable_irq(NVIC_OTG_FS_IRQ);
   while (1) {
     if (pdPASS == xSemaphoreTake(usbInterrupted,portMAX_DELAY)) {
       usbd_poll(usbd_dev);
