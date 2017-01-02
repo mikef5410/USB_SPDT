@@ -25,6 +25,7 @@
 #include "instr_task.h"
 #include "usbcmdio.h"
 
+#define MAGIC (0xAA)
 static char serialNumber[24];
 static char manufacturer[64]="MF";
 static char product[64]="USB Switch/Attenuator/Stacklight";
@@ -322,6 +323,79 @@ void otg_fs_isr(void)
 
 extern const struct _usbd_driver stm32f411_usb_driver;
 
+void copyFromEE(char *dest, uint16_t addr, uint8_t len)
+{
+  uint8_t j=0;
+  uint16_t a=addr;
+
+  for (j=0; j<len; j++) {
+    dest[j] = eeprom9366_read(a);
+    a++;
+  }
+  return;
+}
+
+//Get USB identifiers from EEPROM if the first byte of eeprom matches MAGIC
+void readEEprom(void)
+{
+  uint8_t dataValid;
+  uint16_t strPtr;
+  uint8_t strLen;
+  
+  dataValid = eeprom9366_read(0);
+  if (dataValid != MAGIC) {
+    return;
+  }
+  //First VendorID, little endian
+  strLen = eeprom9366_read(1);
+  strPtr = strLen;
+  strLen = eeprom9366_read(2);
+  strPtr += strLen * 255;
+  if (strPtr) {
+    dev.idVendor=strPtr;
+  }
+
+  //Next ProductID, little endian
+  strLen = eeprom9366_read(3);
+  strPtr = strLen;
+  strLen = eeprom9366_read(4);
+  strPtr += strLen * 255;
+  if (strPtr) {
+    dev.idProduct=strPtr;
+  }
+  
+  // String 1: Manufacturer
+  strLen = eeprom9366_read(5);
+  strPtr = strLen;
+  strLen = eeprom9366_read(6);
+  strPtr += strLen * 255;
+  strLen = eeprom9366_read(7);
+  if (strPtr && strLen) {
+    copyFromEE(manufacturer, strPtr, strLen);
+  }
+
+  // String 2: Product
+  strLen = eeprom9366_read(8);
+  strPtr = strLen;
+  strLen = eeprom9366_read(9);
+  strPtr += strLen * 255;
+  strLen = eeprom9366_read(0xA);
+  if (strPtr && strLen) {
+    copyFromEE(product, strPtr, strLen);
+  }
+
+  // String 3: Serial Number
+  strLen = eeprom9366_read(0xB);
+  strPtr = strLen;
+  strLen = eeprom9366_read(0xC);
+  strPtr += strLen * 255;
+  strLen = eeprom9366_read(0xD);
+  if (strPtr && strLen) {
+    copyFromEE(serialNumber, strPtr, strLen);
+  }
+  
+}
+
 portTASK_FUNCTION(vUSBCDCACMTask, pvParameters)
 {
   usbd_device *usbd_dev;
@@ -332,7 +406,7 @@ portTASK_FUNCTION(vUSBCDCACMTask, pvParameters)
   UARTinQ = xQueueCreate( 256, sizeof(char));
   CTRLinQ = xQueueCreate( 2, sizeof(cmd_packet_t));
 
-  //Descriptors
+  //Default enumeration descriptors ...
   desig_get_unique_id_as_string(id,24); //Copy device SN to USB reported SN
   //strncpy(serialNumber,id,24);
   strncpy(serialNumber,id + strlen(id)- 8,24);
@@ -340,25 +414,29 @@ portTASK_FUNCTION(vUSBCDCACMTask, pvParameters)
   dev.idVendor=vendorID;
   dev.idProduct=productID;
 
+  //If enumeration info is in EEPROM, use it, instead.
+  readEEprom();
   
   vSemaphoreCreateBinary(usbInterrupted);
   //Take the semaphore nonblocking to ensure in the correct state
   xSemaphoreTake(usbInterrupted,0);
 
  AGAIN:
+  redOn(0); redOn(1);
   nvic_disable_irq(NVIC_OTG_FS_IRQ);
+  if (CDCACM_dev) {
+    usbd_disconnect(CDCACM_dev,1);
+  }
   usbd_dev = usbd_init(&stm32f411_usb_driver, &dev, &config,
                        usb_strings, 3,
                        usbd_control_buffer, sizeof(usbd_control_buffer));
 
   CDCACM_dev=usbd_dev;
   usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
-
-  
   nvic_set_priority(NVIC_OTG_FS_IRQ,0xdf);
-
-  
   uint32_t cnt = 0;
+  redOn(1);
+  
   while(!USBConfigured) { //Handle setup packets polled, tight loop
     usbd_poll(usbd_dev);
     delayms(4);
@@ -368,6 +446,7 @@ portTASK_FUNCTION(vUSBCDCACMTask, pvParameters)
   }
 
   //Now handle normal USB traffic with interrupts.
+
   nvic_enable_irq(NVIC_OTG_FS_IRQ);
   while (1) {
     if (pdPASS == xSemaphoreTake(usbInterrupted,portMAX_DELAY)) {

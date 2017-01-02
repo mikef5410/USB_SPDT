@@ -148,6 +148,20 @@ __attribute__((noreturn)) portTASK_FUNCTION(vInstrumentTask, pvParameters) {
         count = le32toh(instrInpktBuf->payload.pl_notifyLight.count);
         stackNotify(color, onTime, offTime, count);
         break;
+
+      case CMD_WRITEEE: //
+        //eeprom9366_erase(instrInpktBuf->payload.pl_eeprom.address);
+        eeprom9366_write(instrInpktBuf->payload.pl_eeprom.address,instrInpktBuf->payload.pl_eeprom.data);
+        break;
+
+      case CMD_READEE:
+        copyPacket(instrInpktBuf, instrOutpktBuf);
+        instrOutpktBuf->payload.pl_eeprom.data=eeprom9366_read(instrInpktBuf->payload.pl_eeprom.address);
+        break;
+
+      case CMD_ERASEALL:
+        eeprom9366_eraseAll();
+        break;
         
       default:
         dprintf("ERROR: unrecognized or NYI command: %u\r\n",instrInpktBuf->cmd);

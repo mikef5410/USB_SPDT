@@ -39,6 +39,7 @@ extern "C" {
     CMD_READEE,     // 13 0x0D  read one byte of EEprom, 2-byte address (LE)
     CMD_WRITEEE,    // 14 0x0E  write one byte of EEprom, 2-byte address (LE), 1 byte data
     CMD_SPDT,       // 15 0x0F  set one of two spdts, 2 bytes { SW1 | SW2, J1|J2 }
+    CMD_ERASEALL,    // 16 0x10  erase al of the EEProm
   } pkttype_t;
 
   typedef enum {
@@ -159,6 +160,11 @@ extern "C" {
     uint32_t ssn_values[3]; // zero-fill unused bits, little-endian
   } payload_ssn_t;
 
+  typedef struct __attribute__((__packed__)) {        // SSN: silicon serial number
+    uint16_t address;
+    uint8_t data;
+  } payload_eeprom_t;
+  
   //Packet has a flow indicator of type cmdflow_t but a packet on the wire doesn't have this field.
   //It's added by the receiver ...
   // Max packet size is 64 bytes on wire, payload is 58 bytes
@@ -181,9 +187,10 @@ extern "C" {
       payload_uint32_t      pl_uint32;
       payload_2uchar_t      pl_2uchar;
       payload_notifyLight_t pl_notifyLight;
+      payload_eeprom_t      pl_eeprom;
     } payload;
   } cmd_packet_t;
-
+  
 #define USB_PKT_MIN_HEADER_SZ (6)
   
   // Simple, speedy 8 bit checksum
