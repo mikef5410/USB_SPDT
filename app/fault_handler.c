@@ -42,6 +42,7 @@ void hard_fault_handler(/*uint32_t stack[]*/ void)
 
 static void printErrorMsg(const char * errMsg)
 {
+  (void) errMsg;
   DPRINTF(errMsg);
 }
 
