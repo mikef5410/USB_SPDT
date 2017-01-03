@@ -14,7 +14,7 @@ class_has 'validVids' => (
 );
 class_has 'validPids' => (
   is      => 'ro',
-  default => sub { [ 0x0001, 0x0002 ] }
+  default => sub { [ 0x00ff, 0x0003, 0x0001, 0x0002 ] }
 );
 class_has 'SUCCESS'    => ( is => 'ro', default => 0 );
 class_has 'FAIL'       => ( is => 'ro', default => -1 );
@@ -214,7 +214,6 @@ sub readEE {
       payload => pack( "v", $addr + $k )
                                       );
     my ( $res, $rxPacket ) = $self->send_packet($outPkt);
-    $rxPacket->dump;
     my $x = substr( $rxPacket->payload, 2, 1 );
     $ret .= $x;
   }
@@ -245,6 +244,21 @@ sub eraseAllEE {
   my ( $res, $rxPacket ) = $self->send_packet($outPkt);
   return ($res);
 }
+
+sub identify {
+  my $self = shift;
+  
+  my $outPkt = AttenSwitch::Packet->new(
+    command => AttenSwitch::COMMAND->ID,
+    payload => ""
+   );
+
+  my ( $res, $rxPacket ) = $self->send_packet($outPkt);
+  my $info=AttenSwitch::ProdInfo->new();
+  $info->fromIDPacket($rxPacket);
+  return($info);
+}
+
 __PACKAGE__->meta->make_immutable;
 1;
 
@@ -363,7 +377,7 @@ use Moose;
 use namespace::autoclean;
 has 'productID' => (
     is  => 'rw',
-    isa => 'AttenSwitch::MODEL'
+    isa => 'AttenSwitch::PRODUCTID'
   );
 has 'protocolVersion' => (
     is  => 'rw',
@@ -389,20 +403,31 @@ has 'fwBldInfo' => (
     is  => 'rw',
     isa => 'Str'
   );
-has 'ControllerBoardVersion' => (
-    is  => 'rw',
-    isa => 'AttenSwitch::VERSION'
-  );
-has 'Model' => (
-    is  => 'rw',
-    isa => 'AttenSwitch::MODEL'
-  );
 has 'SN' => (
     is  => 'rw',
     isa => 'Str'
-  );
+   );
+
+
+sub fromIDPacket {
+  my $self = shift;
+  my $packet = shift;
+
+  my $pl = $packet->payload;
+  my ($prod,$proto,$fwMajor,$fwMinor,$fwBuild,$bldSha)=unpack("CCCCvC/a",$pl);
+  $self->productID(AttenSwitch::PRODUCTID->from_ordinal($prod));
+  $self->protocolVersion($proto);
+  $self->fwRevMajor($fwMajor);
+  $self->fwRevMinor($fwMinor);
+  $self->fwRevBuild($fwBuild);
+  $self->fwSHA1($bldSha);
+}
+
+
 __PACKAGE__->meta->make_immutable;
 1;
+
+
 #
 # BEGIN ENUMERATION CLASSES
 #
@@ -422,10 +447,6 @@ package AttenSwitch::VERSION;
 use Class::Enum qw(REV_UNKNOWN REVA );
 1;
 
-package AttenSwitch::MODEL;
-use Class::Enum qw(MODEL_UNKNOWN ATTEN70 SP8T STACKLIGHT SPDT );
-1;
-
 package AttenSwitch::SPDTSETTING;
 use Class::Enum qw(J1SEL J2SEL);
 1;
@@ -436,4 +457,12 @@ use Class::Enum qw(SW1 SW2);
 
 package AttenSwitch::SP8TSETTING;
 use Class::Enum qw(J1 J2 J3 J4 J5 J6 J7 J8);
+1;
+
+package AttenSwitch::PRODUCTID;
+use Class::Enum (PROD_UNKNOWN => { ordinal=>0xff },
+                 PROD_STACKLIGHT => {ordinal => 1},
+                 PROD_MAPLEOLT => {ordinal => 2},
+                 PROD_ATTEN70 => { ordinal=>3},
+                );
 1;

@@ -11,6 +11,7 @@
  * 
  *******************************************************************************/
 //#define TRACE_PRINT 1
+#define GLOBAL_VERSION
 #define GLOBAL_INSTR_TASK
 #include "instr_task.h"
 
@@ -85,6 +86,68 @@ static void copyPacket(cmd_packet_t *inBuf, cmd_packet_t *outBuf) {
   } // do nothing if either pointer is NULL
 } // end copyPacket
 
+// NOTE: most of the ID is still hard-coded
+// get fw id:  interrogate version.h structure for ID info
+//             this function is hard coded to:
+//             major.minor.build =  00.01.<build count>
+//
+// The SHA1 is an auto-build value scripted in version.mk
+// It is part of the changeset array, which consists of build number,
+// followed by an underscore, then 7 digits of SHA1, or + and six digits
+// of the SHA1 if the repo was built with any changed file (dirty repo)
+#define SZ_BUILD_CNT_ATOI 4      // size of scratch-pad for atoi call
+static payload_id_response_t myID;
+
+// #define SZ_BUILD_SHA1     7   // version.mk generates this !!
+void get_instrument_ID(cmd_packet_t *buffer) {
+  char *pSha1    = NULL;
+  //  char *pBldInfo = NULL;
+  char *pChars   = NULL;
+  char bldStr[8];    // scratch-pad for atoi: converts build-num to integer
+  //char bldInfo[41]; // the other build-info
+  int k;
+
+  memset(&myID,   0,sizeof(myID));
+  memset(&bldStr, 0,sizeof(bldStr));  // NULL atoi conversion array
+  //memset(&bldInfo,0,sizeof(bldInfo)); // NULL array
+  myID.productID       = shortProdID();      // start at 1, max 255
+  myID.protocolVersion = 1;      // increment when the ID pkt format changes
+  myID.fwRev_major     = 1;      // range: 0-99
+  myID.fwRev_minor     = 0;     // range: 0-99
+
+  // copy the version.h build number (changeset) to a small array
+  //      for conversion to an integer (atoi)
+  pSha1  = (char *)&build_sha1[0];    // first 4 chars: 0092_+ae431f
+  pChars = (char *)&bldStr[0];        // point to scratch-pad for atoi
+  for (k=0;k<SZ_BUILD_CNT_ATOI;k++) { // copy build-count from changeset
+    *pChars++ = *pSha1++;
+  }
+  myID.fwRev_build = (uint16_t) atoi(&bldStr[0]);
+  pSha1++;  // move past underscore
+
+  // copy the SHA1 from the changeset
+  pChars = (char *)&myID.bld_sha[0];
+  for (k=0;k<SZ_BUILD_SHA1;k++) {         // copy SHA1 from changeset
+	*pChars++ = *pSha1++;
+  }
+  *pChars++ = 0x00;  // null-terminate
+  myID.bld_sha_len = SZ_BUILD_SHA1+1;  // null-terminate-len
+
+#if 0
+  pBldInfo = (char *)&build_info[0];
+  pChars   = (char *)&myID.bld_info[0];
+  for (k=0;k<MIN(strlen(build_info),40);k++) {         // copy SHA1 from changeset
+	*pChars++ = *pBldInfo++;
+  }
+  *pChars++ = 0x00;  // null-terminate
+  myID.bld_info_len = MIN(strlen(build_info),40) + 1;
+#endif
+  // copy myID into the payload
+  buffer->payload.id_resp = (payload_id_response_t)myID;
+  buffer->length = 4 + 16 + myID.bld_info_len; 
+} // end get_instrument_ID
+
+
 __attribute__((noreturn)) portTASK_FUNCTION(vInstrumentTask, pvParameters) {
 
   (void)pvParameters;
@@ -118,6 +181,11 @@ __attribute__((noreturn)) portTASK_FUNCTION(vInstrumentTask, pvParameters) {
         break;
 
       case CMD_NAK:
+        break;
+
+      case CMD_ID:
+        copyPacket(instrInpktBuf, instrOutpktBuf);
+        get_instrument_ID(instrOutpktBuf);
         break;
 
       case CMD_ECHO:

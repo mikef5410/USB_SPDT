@@ -30,7 +30,7 @@ static char serialNumber[24]="0";
 static char manufacturer[64]="MF";
 static char product[64]="USB Switch/Attenuator/Stacklight";
 static uint16_t vendorID = 0x4161;
-static uint16_t productID = 0x0002;
+static uint16_t productID = 0x00ff;
 
 xQueueHandle UARTinQ;
 
@@ -354,6 +354,7 @@ void readEEprom(void)
   strPtr += strLen * 256;
   if (strPtr) {
     dev.idVendor=strPtr;
+    vendorID=strPtr;
   }
 
   //Next ProductID, little endian
@@ -363,6 +364,7 @@ void readEEprom(void)
   strPtr += strLen * 256;
   if (strPtr) {
     dev.idProduct=strPtr;
+    productID=strPtr;
   }
   
   // String 1: Manufacturer
@@ -395,6 +397,11 @@ void readEEprom(void)
     copyFromEE(serialNumber, strPtr, strLen);
   }
   
+}
+
+uint8_t shortProdID(void)
+{
+  return((uint8_t)(productID % 256));
 }
 
 portTASK_FUNCTION(vUSBCDCACMTask, pvParameters)

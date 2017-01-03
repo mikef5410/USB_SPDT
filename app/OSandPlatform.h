@@ -53,6 +53,7 @@ extern "C" {
 #include <libopencm3/stm32/desig.h>
 #include <libopencm3/stm32/spi.h>
 
+#include "version.h"
 #include "endian.h"
 #include "bsp.h"  
 #include "hiresTimer.h"
@@ -92,6 +93,9 @@ typedef int32_t ChipDriverStatus_t;
 #define likely(x)       __builtin_expect((x),1)
 #define unlikely(x)     __builtin_expect((x),0)
 
+#define MIN(a,b) (a<=b)?(a):(b)
+#define MAX(a,b) (a>=b)?(a):(b)
+  
 //Trigger a HARD FAULT by writing to a FLASH ROM location
 #define TRIG_HARDFAULT *((volatile int*)(0x8000000))=0
     

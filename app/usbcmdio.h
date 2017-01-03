@@ -54,6 +54,13 @@ extern "C" {
   } attenSetting_t; 
 
   typedef enum {
+    PROD_UNKNOWN = 0xff,
+    PROD_STACKLIGHT = 1,
+    PROD_MAPLEOLT = 2,
+    PROD_ATTEN70 = 3,
+  } product_t;
+  
+  typedef enum {
     J1SEL=0,
     J2SEL
   } spdtSetting_t;
@@ -146,7 +153,7 @@ extern "C" {
     uint8_t  bld_sha_len;     // 1    value = 8: 7 for SHA1, 1 for null-term
     uint8_t  bld_sha[8];      // 15   size to this point
     uint8_t  bld_info_len;    // 1    set dynamically
-    uint8_t  bld_info [220];  // up to 220 chars, null-term
+    uint8_t  bld_info [41];  // up to 41 chars, null-term
   } payload_id_response_t;
 
   typedef struct  __attribute__((__packed__)) {
@@ -214,6 +221,9 @@ extern "C" {
     return;
   }
 #endif
+
+USBCMDIOGLOBAL uint8_t shortProdID(void);
+
   
 #ifdef __cplusplus
 }

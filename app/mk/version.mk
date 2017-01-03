@@ -12,6 +12,7 @@ GIT_HASH:=$(shell git rev-list --abbrev-commit HEAD | head -1)
 GIT_HASH_FULL:=$(shell git rev-list HEAD | head -1)
 GIT_DIRTY:=$(shell if git diff-files --quiet --ignore-submodules --;then echo "clean";else echo "dirty";fi)
 GIT_DESC:=$(shell git describe --tags HEAD)
+HASH_FULL_SZ:=41
 
 ifeq (dirty, $(GIT_DIRTY))
 GIT_HASH:=$(GIT_HASH)+
@@ -20,6 +21,7 @@ GIT_DESC:=$(GIT_DESC)+
 endif
 
 CHANGESET:=$(GIT_SERIAL)_$(GIT_HASH)
+CHGSET_SZ:=12
 
 BUILD_DATE:=$(shell date +%Y%m%d)
 BUILD_TIME:=$(shell date +%H%M%S)
@@ -71,10 +73,10 @@ $(VFILE):	$(CSRC) $(CPPSRC)
 	@echo ""                                                                         >> $(VFILE)
 	@echo ""                                                                         >> $(VFILE)
 	@echo "#ifdef RELEASE"                                                           >> $(VFILE)
-	@echo "#define BUILD_INFO \"built $(BUILD_DATE) at $(BUILD_TIME), changeset $(CHANGESET) ($(GIT_DESC)) of branch $(BUILD_BRANCH), by $(USER) on $(HOSTNAME)\""  >> $(VFILE)
+	@echo "#define BUILD_INFO \"$(BUILD_DATE)@$(BUILD_TIME),$(CHANGESET)($(GIT_DESC)) branch $(BUILD_BRANCH):$(USER)@$(HOSTNAME)\""  >> $(VFILE)
 	@echo "#define RELEASE_STATE \"RELEASE\""                                        >> $(VFILE)
 	@echo "#else"                                                                    >> $(VFILE)
-	@echo "#define BUILD_INFO \"DEBUG, built $(BUILD_DATE) at $(BUILD_TIME), changeset $(CHANGESET) ($(GIT_DESC)) of branch $(BUILD_BRANCH), by $(USER) on $(HOSTNAME)\""  >> $(VFILE)
+	@echo "#define BUILD_INFO \"DEBUG,$(BUILD_DATE)@$(BUILD_TIME),$(CHANGESET)($(GIT_DESC)) branch $(BUILD_BRANCH):$(USER)@$(HOSTNAME)\""  >> $(VFILE)
 	@echo "#define RELEASE_STATE \"DEBUG\""                                          >> $(VFILE)
 	@echo "#endif      /* end RELEASE_STATE */"                                      >> $(VFILE)
 	@echo "#define BUILD_SHA1   \"$(CHANGESET)\""                                    >> $(VFILE)
@@ -88,6 +90,9 @@ $(VFILE):	$(CSRC) $(CPPSRC)
 	@echo "VERSIONGLOBAL const char build_sha1_full[] VERSIONPRESET(FULL_SHA1);"     >> $(VFILE)
 	@echo "VERSIONGLOBAL const char build_git_desc [] VERSIONPRESET(GIT_DESC);"      >> $(VFILE)
 	@echo "  "                                                                       >> $(VFILE)
+	@echo "#define SZ_BUILD_CHANGESET $(CHGSET_SZ)"                                  >> $(VFILE)
+	@echo "#define SZ_BUILD_SHA1 7"                                                  >> $(VFILE)
+	@echo "#define SZ_FULL_SHA1 $(HASH_FULL_SZ)"                	                 >> $(VFILE)
 	@echo "#endif    // end _VERSION_INCLUDED"                                       >> $(VFILE)
 
 version:	$(VFILE) $(BFILE)
