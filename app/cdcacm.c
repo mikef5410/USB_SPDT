@@ -26,7 +26,7 @@
 #include "usbcmdio.h"
 
 #define MAGIC (0xAA)
-static char serialNumber[24];
+static char serialNumber[24]="0";
 static char manufacturer[64]="MF";
 static char product[64]="USB Switch/Attenuator/Stacklight";
 static uint16_t vendorID = 0x4161;
@@ -332,6 +332,7 @@ void copyFromEE(char *dest, uint16_t addr, uint8_t len)
     dest[j] = eeprom9366_read(a);
     a++;
   }
+  dest[j]=0;
   return;
 }
 
@@ -350,7 +351,7 @@ void readEEprom(void)
   strLen = eeprom9366_read(1);
   strPtr = strLen;
   strLen = eeprom9366_read(2);
-  strPtr += strLen * 255;
+  strPtr += strLen * 256;
   if (strPtr) {
     dev.idVendor=strPtr;
   }
@@ -359,7 +360,7 @@ void readEEprom(void)
   strLen = eeprom9366_read(3);
   strPtr = strLen;
   strLen = eeprom9366_read(4);
-  strPtr += strLen * 255;
+  strPtr += strLen * 256;
   if (strPtr) {
     dev.idProduct=strPtr;
   }
@@ -368,7 +369,7 @@ void readEEprom(void)
   strLen = eeprom9366_read(5);
   strPtr = strLen;
   strLen = eeprom9366_read(6);
-  strPtr += strLen * 255;
+  strPtr += strLen * 256;
   strLen = eeprom9366_read(7);
   if (strPtr && strLen) {
     copyFromEE(manufacturer, strPtr, strLen);
@@ -378,7 +379,7 @@ void readEEprom(void)
   strLen = eeprom9366_read(8);
   strPtr = strLen;
   strLen = eeprom9366_read(9);
-  strPtr += strLen * 255;
+  strPtr += strLen * 256;
   strLen = eeprom9366_read(0xA);
   if (strPtr && strLen) {
     copyFromEE(product, strPtr, strLen);
@@ -388,7 +389,7 @@ void readEEprom(void)
   strLen = eeprom9366_read(0xB);
   strPtr = strLen;
   strLen = eeprom9366_read(0xC);
-  strPtr += strLen * 255;
+  strPtr += strLen * 256;
   strLen = eeprom9366_read(0xD);
   if (strPtr && strLen) {
     copyFromEE(serialNumber, strPtr, strLen);
@@ -421,12 +422,7 @@ portTASK_FUNCTION(vUSBCDCACMTask, pvParameters)
   //Take the semaphore nonblocking to ensure in the correct state
   xSemaphoreTake(usbInterrupted,0);
 
- AGAIN:
-  redOn(0); redOn(1);
   nvic_disable_irq(NVIC_OTG_FS_IRQ);
-  if (CDCACM_dev) {
-    usbd_disconnect(CDCACM_dev,1);
-  }
   usbd_dev = usbd_init(&stm32f411_usb_driver, &dev, &config,
                        usb_strings, 3,
                        usbd_control_buffer, sizeof(usbd_control_buffer));
@@ -434,19 +430,8 @@ portTASK_FUNCTION(vUSBCDCACMTask, pvParameters)
   CDCACM_dev=usbd_dev;
   usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
   nvic_set_priority(NVIC_OTG_FS_IRQ,0xdf);
-  uint32_t cnt = 0;
-  redOn(1);
-  
-  while(!USBConfigured) { //Handle setup packets polled, tight loop
-    usbd_poll(usbd_dev);
-    delayms(4);
-    if (cnt++ >= 250) { //Not configured yet??
-      goto AGAIN; //Re-initialize USB
-    }
-  }
 
   //Now handle normal USB traffic with interrupts.
-
   nvic_enable_irq(NVIC_OTG_FS_IRQ);
   while (1) {
     if (pdPASS == xSemaphoreTake(usbInterrupted,portMAX_DELAY)) {

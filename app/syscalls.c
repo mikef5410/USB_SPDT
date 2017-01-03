@@ -151,6 +151,9 @@ static void enq(char *ptr, int len)
 static int sendPacket(void)
 {
   int rval=0;
+
+  if (!USBConfigured) return(rval);
+  
   rval = usbd_ep_write_packet(CDCACM_dev, 0x82,
                               ringBuffer.buffer + ringBuffer.rPtr,
                               ringBuffer.size);

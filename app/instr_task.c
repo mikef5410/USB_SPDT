@@ -11,11 +11,10 @@
  * 
  *******************************************************************************/
 //#define TRACE_PRINT 1
-
-#include "OSandPlatform.h"
-
 #define GLOBAL_INSTR_TASK
 #include "instr_task.h"
+
+#include "OSandPlatform.h"
 
 // #define RX_QUEUE_DEBUG 1
 // #define TX_QUEUE_DEBUG 1
@@ -157,6 +156,7 @@ __attribute__((noreturn)) portTASK_FUNCTION(vInstrumentTask, pvParameters) {
       case CMD_READEE:
         copyPacket(instrInpktBuf, instrOutpktBuf);
         instrOutpktBuf->payload.pl_eeprom.data=eeprom9366_read(instrInpktBuf->payload.pl_eeprom.address);
+        instrOutpktBuf->length = htole16(USB_PKT_MIN_HEADER_SZ + 3);
         break;
 
       case CMD_ERASEALL:

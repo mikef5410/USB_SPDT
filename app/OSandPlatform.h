@@ -60,6 +60,7 @@ extern "C" {
 #include "spdtAux.h"
 #include "sp8t.h"
 #include "stacklight.h"
+#include "instr_task.h"  
   
 #define TESTEEPROM 1
 #include "eeprom9366.h"

@@ -1,0 +1,91 @@
+#!/usr/bin/perl
+#
+
+use strict;
+use warnings;
+use feature qw(switch);
+no warnings 'experimental';
+
+#Where to find our library and auxiliary code.
+use FindBin qw($Bin);
+use lib $ENV{ATTENSW} || "/projects/usbAtten_controller/perl";
+
+use lib "$Bin/..";
+use lib "$Bin";
+use Getopt::Long;
+use AttenSwitch;
+
+my $productId="0x0002";
+my $vendorId="0x4161";
+my $manufacturer="";
+my $product="";
+my $serial="";
+my $magic = 0xAA;
+
+my $result = GetOptions(
+                        "p=s" => \$productId,
+                        "v=s" => \$vendorId,
+                        "mfg=s" => \$manufacturer,
+                        "product=s" => \$product,
+                        "serial=s" => \$serial,
+                       );
+
+my $dut    = AttenSwitch->new();
+$result = $dut->connect();
+if ( $result == AttenSwitch::SUCCESS ) {
+  print("Got device\n");
+}
+
+my $stringAddr=0x10;
+$dut->writeEE(1,pack("vv",hex($vendorId),hex($productId)));
+$dut->writeEE(5,pack("vC",$stringAddr,length($manufacturer)));
+if (length($manufacturer)) {
+  $dut->writeEE($stringAddr,$manufacturer);
+}
+$stringAddr += length($manufacturer);
+
+$dut->writeEE(8,pack("vC",$stringAddr,length($product)));
+if (length($product)) {
+  $dut->writeEE($stringAddr,$product);
+}
+$stringAddr += length($product);
+
+$dut->writeEE(0xb,pack("vC",$stringAddr,length($serial)));
+if (length($serial)) {
+  $dut->writeEE($stringAddr,$serial);
+}
+$stringAddr += length($serial);
+
+$dut->writeEE(0,pack("C",$magic));
+
+my $size=512;
+my $buf = $dut->readEE(0,512);
+bufdump($buf);
+exit;
+
+
+
+sub bufdump {
+    my $buf   = shift;
+
+    my $ascii = "";
+    my $j = 0;
+
+    print("0000 - ");
+    for ( $j = 0 ; $j < length($buf) ; $j++ ) {
+      my $val = unpack( "C", substr( $buf, $j, 1 ) );
+      if ( $j && !( $j % 16 ) ) {
+        printf("   $ascii");
+        $ascii = "";
+        printf( "\n%04x - ", $j );
+      }
+      if ( ( $val < 0x20 ) || ( $val > 0x7E ) ) {
+        $ascii .= '.';
+      } else {
+        $ascii .= chr($val);
+      }
+      printf( "%02x ", $val );
+    }
+    my $adj = 16 - ( $j % 16 );
+    print '   ' x $adj, "   ", $ascii, "\n";
+}
