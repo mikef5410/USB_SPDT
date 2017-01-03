@@ -44,7 +44,7 @@ void s1(int up) {
   delayms(ATTEN_DLY);
   gpio_clear(S1U);
   gpio_clear(S1D);
-  hvOn(0);//Supply stays charged up enough to switch the attenuator
+  //hvOn(0);//Supply stays charged up enough to switch the attenuator
 }
 
 void s2(int up) {
@@ -62,7 +62,7 @@ void s2(int up) {
   delayms(ATTEN_DLY);
   gpio_clear(S2U);
   gpio_clear(S2D);
-  hvOn(0);
+  //hvOn(0);
 }
 
 void s3(int up) {
@@ -80,7 +80,7 @@ void s3(int up) {
   delayms(ATTEN_DLY);
   gpio_clear(S3U);
   gpio_clear(S3D);
-  hvOn(0);
+  //hvOn(0);
 }
 
 void s4(int up) {
@@ -97,7 +97,7 @@ void s4(int up) {
   delayms(ATTEN_DLY);
   gpio_clear(S4U);
   gpio_clear(S4D);
-  hvOn(0); 
+  //hvOn(0); 
 }
 
 void setAtten(int attenuation) {

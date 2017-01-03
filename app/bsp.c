@@ -33,9 +33,9 @@ static const clock_scale_t clock32F411 = {
 void greenOn(int on)
 {
   if (on) {
-    gpio_set(GPIOB,GPIO0);
+    gpio_set(GREENLED);
   } else {
-    gpio_clear(GPIOB,GPIO0);
+    gpio_clear(GREENLED);
   }
   return;
 }
@@ -44,20 +44,40 @@ void greenOn(int on)
 void redOn(int on)
 {
   if (on) {
-    gpio_set(GPIOA,GPIO0);
+    gpio_set(REDLED);
   } else {
-    gpio_clear(GPIOA,GPIO0);
+    gpio_clear(REDLED);
   }
   return;
 }
 
+void vhvTimerExpired(xTimerHandle pxTimer)
+{
+  /* Optionally do something if the pxTimer parameter is NULL. */
+  //configASSERT( pxTimer );
+
+  /* Which timer expired? */
+  //lArrayIndex = ( long ) pvTimerGetTimerID( pxTimer );
+  
+  /* Do not use a block time if calling a timer API function from a timer callback
+     function, as doing so could cause a deadlock! */
+  xTimerStop( pxTimer, 0 );
+  hvOn(0);
+}
+
+  
 void hvOn(int on)
 {
   if (on) {
-    gpio_set(GPIOD,GPIO2);
-    delayms(40); //Power-up time is about 40ms
+    if (! hvState ) {
+      gpio_set(HVEnable);
+      delayms(60); //Power-up time is about 40ms
+      hvState=1;
+    }
+    xTimerReset(xTimers[0],5);
   }  else {
-    gpio_clear(GPIOD,GPIO2);
+    gpio_clear(HVEnable);
+    hvState=0;
   }
 }
 
@@ -130,6 +150,13 @@ void setupNVIC(void)
 
   return;
 }
+
+void setupTimers(void)
+{
+  xTimers[0] = xTimerCreate("HVTimer", (HVTimeout/portTICK_RATE_MS),
+                            pdFALSE, (void *) 0, vhvTimerExpired );
+}
+  
 
 void Delay(volatile uint32_t nCount)
 {

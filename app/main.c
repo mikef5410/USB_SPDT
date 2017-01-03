@@ -52,6 +52,7 @@ int main(void)
   redOn(0); greenOn(0);
 
   init_hiresTimer();
+  setupTimers(); //HV turn-off timer
   
   //Fixup NVIC for FreeRTOS ...
   setupNVIC();

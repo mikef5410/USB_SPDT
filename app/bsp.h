@@ -32,6 +32,9 @@
 // PRIVATE API AND SUBJECT TO CHANGE!
 // ----------------------------------------------------------------
 
+#define NUM_TIMERS 2
+xTimerHandle xTimers[ NUM_TIMERS ];
+
 // ----------------------------------------------------------------
 // PUBLIC API definition
 // ----------------------------------------------------------------
@@ -45,6 +48,9 @@ BSPGLOBAL void setupClocks(void);
 BSPGLOBAL void setupGPIOs(void);
 BSPGLOBAL void setupNVIC(void);
 BSPGLOBAL void Delay(volatile uint32_t nCount);
+BSPGLOBAL void setupTimers(void);
+
+BSPGLOBAL uint32_t hvState BSPPRESET(0);
 
 #define BSPGPIO(BANK,NUM) GPIO ## BANK,GPIO ## NUM
 #define S1U BSPGPIO(C,0)
@@ -65,7 +71,11 @@ BSPGLOBAL void Delay(volatile uint32_t nCount);
 #define AUX3 BSPGPIO(C,11)
 #define AUX4 BSPGPIO(C,12)
 
+#define GREENLED BSPGPIO(B,0)
+#define REDLED BSPGPIO(A,0)
+
 #define HVEnable BSPGPIO(D,2)
+#define HVTimeout (10000)
 
 #define MSleep(x) Delay((x) * 30000UL)
 

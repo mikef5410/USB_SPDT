@@ -40,7 +40,7 @@ void stackRed(int on) {
     gpio_set(STACKRED);
   } else {
     gpio_clear(STACKRED);
-    hvOn(0);
+    //    hvOn(0);
   }
 
 }
@@ -55,7 +55,7 @@ void stackYel(int on) {
     gpio_set(STACKYEL);
   } else {
     gpio_clear(STACKYEL);
-    hvOn(0);
+    //    hvOn(0);
   }
 
 }
@@ -71,7 +71,7 @@ void stackGrn(int on) {
     gpio_set(STACKGRN);
   } else {
     gpio_clear(STACKGRN);
-    hvOn(0);
+    //    hvOn(0);
   }
 
 }
@@ -135,7 +135,7 @@ portTASK_FUNCTION(vStackTask, pvParameters)
           gpio_clear(STACKRED);
           gpio_clear(STACKYEL);
           gpio_clear(STACKGRN);
-          hvOn(0);
+          //hvOn(0);
           hv=0;
           cnt=0;
           taskRun=0;
