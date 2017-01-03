@@ -23,34 +23,32 @@ if ( $result == AttenSwitch::SUCCESS ) {
   print("Got device\n");
 }
 
-my $size=512;
-my $buf = $dut->readEE(0,512);
+my $size = 512;
+my $buf = $dut->readEE( 0, 512 );
 bufdump($buf);
 exit;
 
-
-
 sub bufdump {
-    my $buf   = shift;
+  my $buf = shift;
 
-    my $ascii = "";
-    my $j = 0;
+  my $ascii = "";
+  my $j     = 0;
 
-    print("0000 - ");
-    for ( $j = 0 ; $j < length($buf) ; $j++ ) {
-      my $val = unpack( "C", substr( $buf, $j, 1 ) );
-      if ( $j && !( $j % 16 ) ) {
-        printf("   $ascii");
-        $ascii = "";
-        printf( "\n%04x - ", $j );
-      }
-      if ( ( $val < 0x20 ) || ( $val > 0x7E ) ) {
-        $ascii .= '.';
-      } else {
-        $ascii .= chr($val);
-      }
-      printf( "%02x ", $val );
+  print("0000 - ");
+  for ( $j = 0 ; $j < length($buf) ; $j++ ) {
+    my $val = unpack( "C", substr( $buf, $j, 1 ) );
+    if ( $j && !( $j % 16 ) ) {
+      printf("   $ascii");
+      $ascii = "";
+      printf( "\n%04x - ", $j );
     }
-    my $adj = 16 - ( $j % 16 );
-    print '   ' x $adj, "   ", $ascii, "\n";
+    if ( ( $val < 0x20 ) || ( $val > 0x7E ) ) {
+      $ascii .= '.';
+    } else {
+      $ascii .= chr($val);
+    }
+    printf( "%02x ", $val );
+  }
+  my $adj = 16 - ( $j % 16 );
+  print '   ' x $adj, "   ", $ascii, "\n";
 }

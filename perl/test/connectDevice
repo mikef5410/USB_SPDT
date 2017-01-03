@@ -12,9 +12,11 @@ use lib "$Bin/..";
 use lib "$Bin";
 
 use AttenSwitch;
+use Data::Dumper qw(Dumper);
 
-my $dut    = AttenSwitch->new();
+my $dut    = AttenSwitch->new();    #SERIAL=>"138001E0");
 my $result = $dut->connect();
 if ( $result == AttenSwitch::SUCCESS ) {
   print("Got device\n");
+  print Dumper($dut);
 }

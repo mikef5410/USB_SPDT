@@ -29,38 +29,63 @@ has 'dev' => (
   builder   => 'connect',
   lazy      => 1,
 );
+
 has 'usb' => (
   is      => 'rw',
   isa     => 'Device::USB',
   default => sub { Device::USB->new(); }
 );
+
 has 'VID' => (
   is        => 'rw',
   isa       => 'Int',
   predicate => 'has_VID',
 );
+
 has 'PID' => (
   is        => 'rw',
   isa       => 'Int',
   predicate => 'has_PID',
 );
+
+has 'SERIAL' => (
+  is        => 'rw',
+  isa       => 'Str',
+  predicate => 'has_SERIAL',
+);
+
 has 'PRODINFO' => (
   is  => 'rw',
   isa => 'AttenSwitch::ProdInfo'
 );
+
 has 'verbose' => (
   is      => 'rw',
   isa     => 'Bool',
   default => 0
 );
+
 has 'timeout_ms' => (
   is      => 'rw',
   isa     => 'Int',
   default => 500
 );
 
+has 'manufacturer' => (
+  is      => 'rw',
+  isa     => 'Str',
+  default => '',
+);
+
+has 'product' => (
+  is      => 'rw',
+  isa     => 'Str',
+  default => '',
+);
+
 sub connect {
   my $self = shift;
+
   my @vids = $self->has_VID() ? $self->VID() : @{ AttenSwitch->validVids() };
   my @pids = $self->has_PID() ? $self->PID() : @{ AttenSwitch->validPids() };
   my $vid;
@@ -68,7 +93,15 @@ sub connect {
   my $dev;
   foreach $vid (@vids) {
     foreach $pid (@pids) {
-      $dev = $self->usb->find_device( $vid, $pid );
+      if ( $self->has_SERIAL ) {
+        $dev = $self->usb->find_device_if(
+          sub {
+            return ( ( $_->idVendor == $vid ) && ( $_->idProduct == $pid ) && ( $_->serial_number eq $self->SERIAL ) );
+          }
+        );
+      } else {
+        $dev = $self->usb->find_device( $vid, $pid );
+      }
       if ( defined $dev ) {
         goto FOUND;
       }
@@ -81,6 +114,10 @@ sub connect {
 FOUND:
   $self->VID( $dev->idVendor() );
   $self->PID( $dev->idProduct() );
+  $self->SERIAL( $dev->serial_number() );
+  $self->manufacturer( $dev->manufacturer() );
+  $self->product( $dev->product() );
+
   $dev->open();
   if ( $self->verbose ) {
     printf( "Manufacturer   %s, %s \n",                $dev->manufacturer(), $dev->product() );
@@ -106,6 +143,8 @@ FOUND:
   printf("Claim returns  $claim \n") if ( $self->verbose() );
   $self->dev($dev);
 
+  $self->PRODINFO( $self->identify );
+
   # $dev->close();
   return AttenSwitch->SUCCESS;
 }
@@ -128,9 +167,7 @@ sub send_packet {
       my $bytes = $packet->packet;
       my $notSent;
       do {
-        my $ret =
-          $self->dev->bulk_write( AttenSwitch->CMD_OUT_EP, $bytes, length($bytes),
-          $self->timeout_ms );
+        my $ret = $self->dev->bulk_write( AttenSwitch->CMD_OUT_EP, $bytes, length($bytes), $self->timeout_ms );
         $txTot += $ret;
         $notSent = length( $packet->packet ) - $txTot;
         $bytes = substr( $packet->packet, $txTot );
@@ -212,7 +249,7 @@ sub readEE {
     $outPkt = AttenSwitch::Packet->new(
       command => AttenSwitch::COMMAND->READEE,
       payload => pack( "v", $addr + $k )
-                                      );
+    );
     my ( $res, $rxPacket ) = $self->send_packet($outPkt);
     my $x = substr( $rxPacket->payload, 2, 1 );
     $ret .= $x;
@@ -229,7 +266,7 @@ sub writeEE {
   for ( $k = 0 ; $k < length($val) ; $k++ ) {
     $outPkt = AttenSwitch::Packet->new(
       command => AttenSwitch::COMMAND->WRITEEE,
-      payload => pack( "v", $addr + $k) . substr( $val, $k, 1 )
+      payload => pack( "v", $addr + $k ) . substr( $val, $k, 1 )
     );
     my ( $res, $rxPacket ) = $self->send_packet($outPkt);
   }
@@ -247,16 +284,16 @@ sub eraseAllEE {
 
 sub identify {
   my $self = shift;
-  
+
   my $outPkt = AttenSwitch::Packet->new(
     command => AttenSwitch::COMMAND->ID,
     payload => ""
-   );
+  );
 
   my ( $res, $rxPacket ) = $self->send_packet($outPkt);
-  my $info=AttenSwitch::ProdInfo->new();
+  my $info = AttenSwitch::ProdInfo->new();
   $info->fromIDPacket($rxPacket);
-  return($info);
+  return ($info);
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -266,108 +303,108 @@ package AttenSwitch::Packet;
 use Moose;
 use namespace::autoclean;
 has proto_version => (
-    is      => 'rw',
-    isa     => 'Int',
-    default => 1
-  );
+  is      => 'rw',
+  isa     => 'Int',
+  default => 1
+);
 has command => (
-    is        => 'rw',
-    isa       => "AttenSwitch::COMMAND",
-    predicate => 'has_command'
-  );
+  is        => 'rw',
+  isa       => "AttenSwitch::COMMAND",
+  predicate => 'has_command'
+);
 has payload => (
-    is        => 'rw',
-    isa       => 'Str',
-    predicate => 'has_payload'
-  );
+  is        => 'rw',
+  isa       => 'Str',
+  predicate => 'has_payload'
+);
 has packet => (
-    is  => 'rw',
-    isa => 'Str'
-  );
+  is  => 'rw',
+  isa => 'Str'
+);
 
 #Called right after object construction so we can say:
 # $obj=AttenSwitch::Packet->new(command=>$command,payload=>$payload);
 sub BUILD {
-    my $self = shift;
-    $self->make() if ( $self->has_command() && $self->has_payload() );
+  my $self = shift;
+  $self->make() if ( $self->has_command() && $self->has_payload() );
 }
 
 sub make {
-    my $self    = shift;
-    my $command = shift;    #AttenSwitch::COMMAND
-    my $payload = shift;    #String of bytes
-    if ( defined($command)
-      && ref($command)
-      && $command->isa("AttenSwitch::COMMAND") )
-    {
-      $self->command($command);
-    }
-    if ( defined($payload) ) {
-      $self->payload($payload);
-    }
-    if ( $self->has_command() && $self->has_payload() ) {
-      $self->packet( pack( "CvC", 1, length( $self->payload ) + 6, $self->command->ordinal ) );
-      $self->packet( $self->packet . pack( "v", $self->cksum_simple( $self->payload ) ) );
-      $self->packet( $self->packet . $self->payload );
-    }
+  my $self    = shift;
+  my $command = shift;    #AttenSwitch::COMMAND
+  my $payload = shift;    #String of bytes
+  if ( defined($command)
+    && ref($command)
+    && $command->isa("AttenSwitch::COMMAND") )
+  {
+    $self->command($command);
+  }
+  if ( defined($payload) ) {
+    $self->payload($payload);
+  }
+  if ( $self->has_command() && $self->has_payload() ) {
+    $self->packet( pack( "CvC", 1, length( $self->payload ) + 6, $self->command->ordinal ) );
+    $self->packet( $self->packet . pack( "v", $self->cksum_simple( $self->payload ) ) );
+    $self->packet( $self->packet . $self->payload );
+  }
 }
 
 sub from_bytes {
-    my $self   = shift;
-    my $packet = shift;
-    if ( defined($packet) ) {
-      $self->packet($packet);
-    }
-    my $ver = unpack( 'C', substr( $self->packet, 0, 1 ) );
-    my $len = unpack( 'v', substr( $self->packet, 1, 2 ) );
-    my $cmd = unpack( 'C', substr( $self->packet, 3, 1 ) );
-    my $sum = unpack( 'v', substr( $self->packet, 4, 2 ) );
-    $self->payload( substr( $self->packet, 6 ) );
-    $self->command( AttenSwitch::COMMAND->from_ordinal($cmd) );
+  my $self   = shift;
+  my $packet = shift;
+  if ( defined($packet) ) {
+    $self->packet($packet);
+  }
+  my $ver = unpack( 'C', substr( $self->packet, 0, 1 ) );
+  my $len = unpack( 'v', substr( $self->packet, 1, 2 ) );
+  my $cmd = unpack( 'C', substr( $self->packet, 3, 1 ) );
+  my $sum = unpack( 'v', substr( $self->packet, 4, 2 ) );
+  $self->payload( substr( $self->packet, 6 ) );
+  $self->command( AttenSwitch::COMMAND->from_ordinal($cmd) );
 }
 
 sub cksum_simple {
-    my $self    = shift;
-    my $payload = shift;
-    my $sum     = 0;
-    for my $ch ( unpack( 'C*', $payload ) ) {
-      $sum += $ch;
-      $sum &= 0xffff;
-    }
-    return ($sum);
+  my $self    = shift;
+  my $payload = shift;
+  my $sum     = 0;
+  for my $ch ( unpack( 'C*', $payload ) ) {
+    $sum += $ch;
+    $sum &= 0xffff;
+  }
+  return ($sum);
 }
 
 sub dump {
-    my $self  = shift;
-    my $pkt   = $self->payload;
-    my $ascii = "";
-    my $ver   = unpack( 'C', substr( $self->packet, 0, 1 ) );
-    my $len   = unpack( 'v', substr( $self->packet, 1, 2 ) );
-    my $sum   = unpack( 'v', substr( $self->packet, 4, 2 ) );
-    printf( "Ver: %d\n",   $ver );
-    printf( "Len: %d\n",   $len );
-    printf( "Cmd: %s\n",   $self->command->name );
-    printf( "Sum: 0x%x\n", $sum );
-    printf("Payload:\n");
-    printf( "%04x - ", 0 );
-    my $j = 0;
+  my $self  = shift;
+  my $pkt   = $self->payload;
+  my $ascii = "";
+  my $ver   = unpack( 'C', substr( $self->packet, 0, 1 ) );
+  my $len   = unpack( 'v', substr( $self->packet, 1, 2 ) );
+  my $sum   = unpack( 'v', substr( $self->packet, 4, 2 ) );
+  printf( "Ver: %d\n",   $ver );
+  printf( "Len: %d\n",   $len );
+  printf( "Cmd: %s\n",   $self->command->name );
+  printf( "Sum: 0x%x\n", $sum );
+  printf("Payload:\n");
+  printf( "%04x - ", 0 );
+  my $j = 0;
 
-    for ( $j = 0 ; $j < length($pkt) ; $j++ ) {
-      my $val = unpack( "C", substr( $pkt, $j, 1 ) );
-      if ( $j && !( $j % 16 ) ) {
-        printf("   $ascii");
-        $ascii = "";
-        printf( "\n%04x - ", $j );
-      }
-      if ( ( $val < 0x20 ) || ( $val > 0x7E ) ) {
-        $ascii .= '.';
-      } else {
-        $ascii .= chr($val);
-      }
-      printf( "%02x ", $val );
+  for ( $j = 0 ; $j < length($pkt) ; $j++ ) {
+    my $val = unpack( "C", substr( $pkt, $j, 1 ) );
+    if ( $j && !( $j % 16 ) ) {
+      printf("   $ascii");
+      $ascii = "";
+      printf( "\n%04x - ", $j );
     }
-    my $adj = 16 - ( $j % 16 );
-    print '   ' x $adj, "   ", $ascii, "\n";
+    if ( ( $val < 0x20 ) || ( $val > 0x7E ) ) {
+      $ascii .= '.';
+    } else {
+      $ascii .= chr($val);
+    }
+    printf( "%02x ", $val );
+  }
+  my $adj = 16 - ( $j % 16 );
+  print '   ' x $adj, "   ", $ascii, "\n";
 }
 __PACKAGE__->meta->make_immutable;
 1;
@@ -376,46 +413,45 @@ package AttenSwitch::ProdInfo;
 use Moose;
 use namespace::autoclean;
 has 'productID' => (
-    is  => 'rw',
-    isa => 'AttenSwitch::PRODUCTID'
-  );
+  is  => 'rw',
+  isa => 'AttenSwitch::PRODUCTID'
+);
 has 'protocolVersion' => (
-    is  => 'rw',
-    isa => 'Int'
-  );
+  is  => 'rw',
+  isa => 'Int'
+);
 has 'fwRevMajor' => (
-    is  => 'rw',
-    isa => 'Int'
-  );
+  is  => 'rw',
+  isa => 'Int'
+);
 has 'fwRevMinor' => (
-    is  => 'rw',
-    isa => 'Int'
-  );
+  is  => 'rw',
+  isa => 'Int'
+);
 has 'fwRevBuild' => (
-    is  => 'rw',
-    isa => 'Int'
-  );
+  is  => 'rw',
+  isa => 'Int'
+);
 has 'fwSHA1' => (
-    is  => 'rw',
-    isa => 'Str'
-  );
+  is  => 'rw',
+  isa => 'Str'
+);
 has 'fwBldInfo' => (
-    is  => 'rw',
-    isa => 'Str'
-  );
+  is  => 'rw',
+  isa => 'Str'
+);
 has 'SN' => (
-    is  => 'rw',
-    isa => 'Str'
-   );
-
+  is  => 'rw',
+  isa => 'Str'
+);
 
 sub fromIDPacket {
-  my $self = shift;
+  my $self   = shift;
   my $packet = shift;
 
   my $pl = $packet->payload;
-  my ($prod,$proto,$fwMajor,$fwMinor,$fwBuild,$bldSha)=unpack("CCCCvC/a",$pl);
-  $self->productID(AttenSwitch::PRODUCTID->from_ordinal($prod));
+  my ( $prod, $proto, $fwMajor, $fwMinor, $fwBuild, $bldSha ) = unpack( "CCCCvC/a", $pl );
+  $self->productID( AttenSwitch::PRODUCTID->from_ordinal($prod) );
   $self->protocolVersion($proto);
   $self->fwRevMajor($fwMajor);
   $self->fwRevMinor($fwMinor);
@@ -423,10 +459,8 @@ sub fromIDPacket {
   $self->fwSHA1($bldSha);
 }
 
-
 __PACKAGE__->meta->make_immutable;
 1;
-
 
 #
 # BEGIN ENUMERATION CLASSES
@@ -460,9 +494,10 @@ use Class::Enum qw(J1 J2 J3 J4 J5 J6 J7 J8);
 1;
 
 package AttenSwitch::PRODUCTID;
-use Class::Enum (PROD_UNKNOWN => { ordinal=>0xff },
-                 PROD_STACKLIGHT => {ordinal => 1},
-                 PROD_MAPLEOLT => {ordinal => 2},
-                 PROD_ATTEN70 => { ordinal=>3},
-                );
+use Class::Enum (
+  PROD_UNKNOWN    => { ordinal => 0xff },
+  PROD_STACKLIGHT => { ordinal => 1 },
+  PROD_MAPLEOLT   => { ordinal => 2 },
+  PROD_ATTEN70    => { ordinal => 3 },
+);
 1;
