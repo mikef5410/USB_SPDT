@@ -16,7 +16,7 @@ my $setting = uc( shift(@ARGV) );
 
 use AttenSwitch;
 
-my $dut    = AttenSwitch->new();
+my $dut    = AttenSwitch->new(PID=>0x0002);
 my $result = $dut->connect();
 if ( $result == AttenSwitch::SUCCESS ) {
   print("Got device\n");
@@ -27,7 +27,7 @@ my $s;
 
 SW1: {
   if ( $sw eq "1" ) { $swSel = AttenSwitch::SPDTSEL->SW1; last SW1; }
-  if ( $sw eq "2" ) { $swSel = AttenSwitch::SPDTSEL->SW2; last SW2; }
+  if ( $sw eq "2" ) { $swSel = AttenSwitch::SPDTSEL->SW2; last SW1; }
 }
 
 SW: {
