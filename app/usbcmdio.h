@@ -151,7 +151,7 @@ extern "C" {
     // 6    size to this point
     //
     uint8_t  bld_sha_len;     // 1    value = 8: 7 for SHA1, 1 for null-term
-    uint8_t  bld_sha[8];      // 15   size to this point
+    uint8_t  bld_sha[9];      // 16   size to this point
     uint8_t  bld_info_len;    // 1    set dynamically
     uint8_t  bld_info [41];  // up to 41 chars, null-term
   } payload_id_response_t;

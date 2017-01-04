@@ -123,8 +123,9 @@ void get_instrument_ID(cmd_packet_t *buffer) {
     *pChars++ = *pSha1++;
   }
   myID.fwRev_build = (uint16_t) atoi(&bldStr[0]);
-  pSha1++;  // move past underscore
-
+  //pSha1++;  // move past underscore
+  pSha1--;
+  
   // copy the SHA1 from the changeset
   pChars = (char *)&myID.bld_sha[0];
   for (k=0;k<SZ_BUILD_SHA1;k++) {         // copy SHA1 from changeset
@@ -144,7 +145,7 @@ void get_instrument_ID(cmd_packet_t *buffer) {
 #endif
   // copy myID into the payload
   buffer->payload.id_resp = (payload_id_response_t)myID;
-  buffer->length = 4 + 16 + myID.bld_info_len; 
+  buffer->length = USB_PKT_MIN_HEADER_SZ + 16; //+ myID.bld_info_len; 
 } // end get_instrument_ID
 
 

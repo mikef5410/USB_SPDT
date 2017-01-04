@@ -91,7 +91,7 @@ $(VFILE):	$(CSRC) $(CPPSRC)
 	@echo "VERSIONGLOBAL const char build_git_desc [] VERSIONPRESET(GIT_DESC);"      >> $(VFILE)
 	@echo "  "                                                                       >> $(VFILE)
 	@echo "#define SZ_BUILD_CHANGESET $(CHGSET_SZ)"                                  >> $(VFILE)
-	@echo "#define SZ_BUILD_SHA1 7"                                                  >> $(VFILE)
+	@echo "#define SZ_BUILD_SHA1 8"                                                  >> $(VFILE)
 	@echo "#define SZ_FULL_SHA1 $(HASH_FULL_SZ)"                	                 >> $(VFILE)
 	@echo "#endif    // end _VERSION_INCLUDED"                                       >> $(VFILE)
 
