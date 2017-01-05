@@ -91,6 +91,7 @@ sub connect {
   my $vid;
   my $pid;
   my $dev;
+  
   foreach $vid (@vids) {
     foreach $pid (@pids) {
       if ( $self->has_SERIAL ) {
@@ -111,6 +112,7 @@ sub connect {
     print "ERROR: could not find any AttenSwitch devices \n";
     return AttenSwitch->FAIL;
   }
+  
 FOUND:
   $self->VID( $dev->idVendor() );
   $self->PID( $dev->idProduct() );
@@ -139,7 +141,7 @@ FOUND:
     }
     printf("\n") if ( $self->verbose() );
   }
-  my $claim = $dev->claim_interface(0x2);
+  my $claim = $dev->claim_interface(0x2); #Interface #2 is my command I/O interface
   printf("Claim returns  $claim \n") if ( $self->verbose() );
   $self->dev($dev);
 
