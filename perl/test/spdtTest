@@ -16,7 +16,7 @@ my $setting = uc( shift(@ARGV) );
 
 use AttenSwitch;
 
-my $dut    = AttenSwitch->new(PID=>0x0002);
+my $dut = AttenSwitch->new( PID => 0x0002 );
 my $result = $dut->connect();
 if ( $result == AttenSwitch::SUCCESS ) {
   print("Got device\n");
