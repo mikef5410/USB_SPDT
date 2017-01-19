@@ -2,6 +2,8 @@
 
 USB control of HP step attenuators, Coax Switches, and Stacklights
 
+![USB Microwave Attenuator](/doc/usb_atten.jpg)
+
 This project is an STM32F411 based USB controller, originally for scavanged HP
 microwave step attenuators, but I've also used it to control microwave coax
 switches and a stacklight at my desk.
