@@ -21,7 +21,20 @@ The board has a USB 5V->12 or 24V step-up converter. The old HP attenuators I
 have use 24V, my switches and stacklight use 12V. Change a resistor in the
 DC-DC converter according to your intended use.
 
+It's just a USB->GPIO device with some high voltage switching ability. FET
+switches can be loaded for high-side or low-side switching, because you never
+know what you're going to scavange. See the schematic.
+
 The controller consults EEprom for USB identifying material, so one board and
 software load can fit many uses.
 
 After cloning, run the bootstrap script to get the required submodules.
+
+So, here's an example of a stacklight:
+
+![Stacklight](/doc/stacklight.jpg)
+
+And, running a couple of Dow-Key SP8T's and Dow-Key SPDT's through a breakout
+board:
+
+![coaxSwitches](/doc/coaxSwitches.jpg)
