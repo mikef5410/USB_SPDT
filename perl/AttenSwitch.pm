@@ -8,6 +8,8 @@
 # Control USB Attenuator/Switch/Stacklight microcontroller
 # via packet protocol over bulk channel
 #
+# code lives here: https://github.com/mikef5410/USB_Attenuator_Switch_Stacklight.git
+#
 
 package AttenSwitch;
 use Device::USB;
@@ -81,6 +83,8 @@ This module actually implements three different devices, a Stacklight driver, a 
 The drivers are custom designed STM32F411 usb devices that identify with VID:0x4161, and PID:0x0001 for stacklight, 0x0002 for SP8T+SPDT,
 and 0x0003 for attenuator. The devices also implement a CDC-ACM device and have a debug monitor running on that interface. The protocol 
 used by this module is a simple COMMAND-RESPONSE packet protocol implemented on bulk endpoints 0x1/0x81.
+
+Sources and HW design files live here: https://github.com/mikef5410/USB_Attenuator_Switch_Stacklight.git
 
 
 =head1 Class Atributes
