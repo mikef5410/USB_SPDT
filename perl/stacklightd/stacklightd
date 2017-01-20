@@ -173,6 +173,6 @@ To turn lights on solid, make on_time 0, so "r 0 0 0" would turn the red light o
 
 To turn lights off, blink once for 1 ms, like "r 1 1 1", or simply remove /tmp/stacklight.
 
-A PID file is put in /var/run/stacklightd.pid by default, so root needs to run this.
+A PID file is put in /var/run/stacklightd/stacklightd.pid by default, so root needs to run this.
 
 =cut
