@@ -6,12 +6,14 @@
 
 #use strict;
 use Linux::Inotify2;
-use File::Basename qw(dirname);
+use File::Basename qw(dirname basename);
+use File::Path qw(make_path);
 use POE;
 use POEx::Inotify;
 use Proc::Daemon;
 use Proc::PID::File;
 use Sys::Syslog;
+use Time::HiRes;
 
 #Where to find our library and auxiliary code.
 use FindBin qw($Bin);
@@ -22,15 +24,24 @@ use lib "$Bin/..";
 use lib "$Bin";
 use AttenSwitch;
 
-#Daemonize
-Proc::Daemon::Init();
+my $pidfile = "/var/run/stacklightd/stacklightd.pid";
+my $semfile = "/tmp/stacklight";
+
 
 # If already running, then exit (/var/run/basename($0).pid)
-if ( Proc::PID::File->running() ) {
+if ( Proc::PID::File->running(dir=>dirname($pidfile)) ) {
   exit(0);
 }
 
-my $semfile = "/tmp/stacklight";
+#Daemonize, make sure we've got a writable directory for the pid file....
+if ( ! -d dirname($pidfile) ) {
+  make_path(dirname($pidfile));
+}
+chown(65534,65534,dirname($pidfile));
+chmod(0777,dirname($pidfile));
+Proc::Daemon::Init({setuid=>65534,setgid=>65534,pid_file=>$pidfile});
+
+
 my $stacklight = AttenSwitch->new(PID=>0x0001, SERIAL=>"13700250");
 my $result = $stacklight->connect();
 
@@ -39,6 +50,8 @@ my $currentColor = "g";
 if ($result != AttenSwitch::SUCCESS) {
   die("No stacklight to control!");
 }
+chase_down();
+
 
 $stacklight->disconnect();
 openlog( "stacklightd", "ndelay,pid", "local0" );
@@ -106,6 +119,26 @@ sub file_deleted {
     $stacklight->disconnect();
   }
 
+  return;
+}
+
+sub chase_down {
+  my $time1 = 0.8;
+  my $time2 = 0.8;
+
+  $stacklight->stacklightNotify("r",0,0,0);
+  sleep($time1);
+  $stacklight->stacklightNotify("ry",0,0,0);
+  sleep($time2);
+  $stacklight->stacklightNotify("r",1,1,1);
+  $stacklight->stacklightNotify("y",0,0,0);
+  sleep($time1);
+  $stacklight->stacklightNotify("yg",0,0,0);
+  sleep($time2);
+  $stacklight->stacklightNotify("y",1,1,1);
+  $stacklight->stacklightNotify("g",0,0,0);
+  sleep($time1);
+  $stacklight->stacklightNotify("g",1,1,1);
   return;
 }
 

@@ -4,7 +4,7 @@ Description=Control the stacklight by watching /tmp/stacklight
 [Service]
 Type=forking
 ExecStart=/usr/local/bin/stacklightd
-PIDFile=/var/run/stacklightd.pid
+PIDFile=/var/run/stacklightd/stacklightd.pid
 RestartSec=5
 Restart=always
 
