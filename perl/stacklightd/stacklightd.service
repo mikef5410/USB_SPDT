@@ -1,0 +1,12 @@
+[Unit]
+Description=Control the stacklight by watching /tmp/stacklight
+
+[Service]
+Type=forking
+ExecStart=/usr/local/bin/stacklightd
+PIDFile=/var/run/stacklightd.pid
+RestartSec=5
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

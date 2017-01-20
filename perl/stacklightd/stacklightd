@@ -1,0 +1,145 @@
+#!/usr/bin/perl
+#
+
+#Watch /tmp/stacklight for blink instructions
+
+
+#use strict;
+use Linux::Inotify2;
+use File::Basename qw(dirname);
+use POE;
+use POEx::Inotify;
+use Proc::Daemon;
+use Proc::PID::File;
+use Sys::Syslog;
+
+#Where to find our library and auxiliary code.
+use FindBin qw($Bin);
+use lib $ENV{BCOM_PERL} || "/projects/Bcom-perl";
+use lib $ENV{PERL_GPIB} || "/projects/gpib";
+
+use lib "$Bin/..";
+use lib "$Bin";
+use AttenSwitch;
+
+#Daemonize
+Proc::Daemon::Init();
+
+# If already running, then exit (/var/run/basename($0).pid)
+if ( Proc::PID::File->running() ) {
+  exit(0);
+}
+
+my $semfile = "/tmp/stacklight";
+my $stacklight = AttenSwitch->new(PID=>0x0001, SERIAL=>"13700250");
+my $result = $stacklight->connect();
+
+my $currentColor = "g";
+
+if ($result != AttenSwitch::SUCCESS) {
+  die("No stacklight to control!");
+}
+
+$stacklight->disconnect();
+openlog( "stacklightd", "ndelay,pid", "local0" );
+
+my $MONdir = {
+  path => dirname($semfile),
+  events => { (IN_MOVED_TO|IN_CLOSE_WRITE) => 'file_created',
+              (IN_MOVED_FROM|IN_DELETE) => 'file_deleted',
+            }
+ };
+
+POEx::Inotify->spawn( );
+
+POE::Session->create(
+  package_states => [ 
+    'main' => [ qw(_start file_created file_deleted) ],
+   ],
+ );
+
+$poe_kernel->run();
+exit 0;
+
+sub _start {
+  my( $kernel, $heap ) = @_[ KERNEL, HEAP ];
+  syslog( LOG_INFO, "program starting." );
+
+  unlink($semfile); #clear previous state
+  $kernel->call( inotify => 'monitor', $MONdir );
+
+  return;
+}
+
+sub file_created {
+  my( $kernel, $e, $args ) = @_[ KERNEL, ARG0, ARG1];
+
+  if ($e->fullname eq $semfile) {
+    syslog( LOG_INFO, "blink request");
+    open(my $SEM, $semfile);
+    my $in = <$SEM>;
+    close($SEM);
+    my($color,$timeOn,$timeOff,$count)=split(" ",$in);
+    $currentColor=$color;
+    my $r = $stacklight->connect();
+    if ($r != AttenSwitch::SUCCESS) {
+      syslog(LOG_INFO, "stacklight open failed");
+      return;
+    }
+    $stacklight->stacklightNotify($color,$timeOn,$timeOff,$count);
+    $stacklight->disconnect();
+  }
+  return;
+}
+
+sub file_deleted {
+  my( $kernel, $e, $args ) = @_[ KERNEL, ARG0, ARG1];
+
+  if ($e->fullname eq $semfile) {
+    syslog( LOG_INFO, "extinguish request");
+    my $r = $stacklight->connect();
+    if ($r != AttenSwitch::SUCCESS) {
+      syslog(LOG_INFO, "stacklight open failed");
+      return;
+    }
+    $stacklight->stacklightNotify($currentColor,1,1,1);
+    $stacklight->disconnect();
+  }
+
+  return;
+}
+
+__END__
+
+=head1 NAME
+
+stacklightd - Watch /tmp/stacklight for notification instructions
+
+=head1 SYNOPSYS
+
+stacklightd
+
+=head1 OPTIONS
+
+none
+
+=head1 DESCRIPTION
+
+This program is a daemon that watches /tmp/stacklight. The file should have 1 line of the form:
+
+=over 4
+
+color on_time off_time count
+
+=back
+
+where color can be "r","g","y" or some combination, on_time and off_time are in milliseconds, and count is obvious.
+
+A zero count means repeat indefinitely. A zero on_time, means solid on.
+To turn lights on solid, make on_time 0, so "r 0 0 0" would turn the red light on indefinitely.
+
+To turn lights off, blink once for 1 ms, like "r 1 1 1", or simply remove /tmp/stacklight.
+
+A PID file is put in /var/run/stacklightd.pid by default, so root needs to run this.
+
+=cut
