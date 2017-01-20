@@ -35,8 +35,8 @@ void stackRed(int on) {
   hvOn(1);//Charge up the output cap
   
   if (on) {
-    gpio_clear(STACKYEL);
-    gpio_clear(STACKGRN);
+    //gpio_clear(STACKYEL);
+    //gpio_clear(STACKGRN);
     gpio_set(STACKRED);
   } else {
     gpio_clear(STACKRED);
@@ -50,8 +50,8 @@ void stackYel(int on) {
   hvOn(1);//Charge up the output cap
   
   if (on) {
-    gpio_clear(STACKRED);
-    gpio_clear(STACKGRN);
+    //gpio_clear(STACKRED);
+    //gpio_clear(STACKGRN);
     gpio_set(STACKYEL);
   } else {
     gpio_clear(STACKYEL);
@@ -66,8 +66,8 @@ void stackGrn(int on) {
   hvOn(1);//Charge up the output cap
   
   if (on) {
-    gpio_clear(STACKRED);
-    gpio_clear(STACKYEL);
+    //gpio_clear(STACKRED);
+    //gpio_clear(STACKYEL);
     gpio_set(STACKGRN);
   } else {
     gpio_clear(STACKGRN);
@@ -80,6 +80,7 @@ void stackGrn(int on) {
 uint32_t stackNotify(uint32_t col, uint32_t on, uint32_t off, uint32_t cnt)
 {
   if (col) {
+    stacklightForceHV=1;
     if (on==0) { //Solid on
       taskRun=0;
       if (col & R) stackRed(1);
@@ -94,6 +95,7 @@ uint32_t stackNotify(uint32_t col, uint32_t on, uint32_t off, uint32_t cnt)
     }
   } else { //Turn off
     color=0;
+    stacklightForceHV=0;
     taskRun=1;
   }
 
@@ -135,7 +137,7 @@ portTASK_FUNCTION(vStackTask, pvParameters)
           gpio_clear(STACKRED);
           gpio_clear(STACKYEL);
           gpio_clear(STACKGRN);
-          //hvOn(0);
+          hvOn(0);
           hv=0;
           cnt=0;
           taskRun=0;

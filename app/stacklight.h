@@ -44,6 +44,8 @@
 #define Y 0x2
 #define G 0x4
 
+STACKLIGHTGLOBAL uint32_t stacklightForceHV STACKLIGHTPRESET(0);
+
 STACKLIGHTGLOBAL void stackRed(int on);
 STACKLIGHTGLOBAL void stackYel(int on);
 STACKLIGHTGLOBAL void stackGrn(int on);

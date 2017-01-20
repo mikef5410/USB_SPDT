@@ -446,9 +446,9 @@ sub atten {
 
 =over 4
 
-=item B<< $err = $attenswitch->stacklightnotify($color,$onTime,$offTime,$count) >> 
+=item B<< $err = $attenswitch->stacklightNotify($color,$onTime,$offTime,$count) >> 
 
-Command the stacklight to turn on a light. $color is a string: "r,y, or g", $onTime and $offTime are in milliseconds, and $count is the number of times to blink. A count of 0 is blink indefinitely. To extinguish, send a new notify with a short blink, and count of 1. Solid on can be emulated with a long on time and very short off time.
+Command the stacklight to turn on a light. $color is a string: "r,y, or g" (multiple colors are OK), $onTime and $offTime are in milliseconds, and $count is the number of times to blink. A count of 0 is blink indefinitely. To extinguish, send a new notify with a short blink, and count of 1. If on time is 0, the color will be solid on indefinately. Turn all off with <C>stacklightNotify("g",1,1,1);</C>
 
 $err will be either AttenSwitch->SUCCESS or AttenSwitch->FAIL.
 
