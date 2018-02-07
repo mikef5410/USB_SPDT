@@ -84,16 +84,17 @@ void s1_j1sel(int on)
 void s2_j1sel(int on)
 {
   hvOn(1);
-  gpio_set(SWEnable);
   if (s2_pulseHigh) {
     if (on) {
       gpio_clear(S2D);
       gpio_set(S2U);
+      gpio_set(SWEnable);
       delayms(SW_DELAY);
       gpio_clear(S2U);		//Latching relays
     } else {
       gpio_clear(S2U);
       gpio_set(S2D);
+      gpio_set(SWEnable);
       delayms(SW_DELAY);
       gpio_clear(S2D);		//Latching relays
     }
@@ -101,11 +102,13 @@ void s2_j1sel(int on)
     if (on) {
       gpio_set(S2D);
       gpio_clear(S2U);
+      gpio_set(SWEnable);
       delayms(SW_DELAY);
       gpio_set(S2U);		//Latching relays
     } else {
       gpio_set(S2U);
       gpio_clear(S2D);
+      gpio_set(SWEnable);
       delayms(SW_DELAY);
       gpio_set(S2D);		//Latching relays
     }

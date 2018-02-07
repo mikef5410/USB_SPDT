@@ -71,6 +71,38 @@ static int cmd_hv(int argc, char **argv)
   return(1);
 }
 
+static int cmd_sw1(int argc, char **argv)
+{
+  if (argc == 1) {
+    if (*argv[0] == 'A' || *argv[0] == 'a') {
+      s1_j1sel(1);
+      return(0);
+    }
+    if (*argv[0] == 'B' || *argv[0] == 'b') {
+      s1_j1sel(0);
+      return(0);
+    }
+  }
+  myprintf("usage: s1 A|B \n");
+  return(1);
+}
+
+static int cmd_sw2(int argc, char **argv)
+{
+  if (argc == 1) {
+    if (*argv[0] == 'A' || *argv[0] == 'a') {
+      s2_j1sel(1);
+      return(0);
+    }
+    if (*argv[0] == 'B' || *argv[0] == 'b') {
+      s2_j1sel(0);
+      return(0);
+    }
+  }
+  myprintf("usage: s2 A|B \n");
+  return(1);
+}
+
 static int cmd_aux(int argc, char **argv)
 {
   uint32_t switchN = 0;
@@ -94,13 +126,22 @@ static int cmd_aux(int argc, char **argv)
   return(0);
 }
 
-#ifdef TESTEEPROM
 static int cmd_testee(int argc, char **argv)
 {
   (void) argc;
   (void) argv;
 
   eeprom9366_test();
+  return(0);
+}
+
+#ifdef TESTEEPROM
+static int cmd_eraseee(int argc, char **argv)
+{
+  (void) argc;
+  (void) argv;
+
+  eeprom9366_eraseAll();
   return(0);
 }
 #endif
@@ -117,8 +158,12 @@ dispatchEntry mainCommands[] = {
   {"","timer",            "                      Test the hires timer", cmd_timer, NULL},
   {"","hv",               "[1|0]                 Turn high voltage on/off", cmd_hv, NULL},
   {"","aux",              "auxnum 1|0            Turn aux bit on/off", cmd_aux, NULL},
+  {"","s1",               "[A|B                  Turn switch 1 to A or B", cmd_sw1, NULL},
+  {"","s2",               "[A|B                  Turn switch 2 to A or B", cmd_sw2, NULL},
+  
 #ifdef TESTEEPROM
   {"","testee",           "                      Test eeprom", cmd_testee, NULL},
+  {"","eraseee",          "                      Erase entire eeprom", cmd_eraseee, NULL},
 #endif
     //LAST ENTRY
   {NULL, NULL, NULL, NULL, NULL}
