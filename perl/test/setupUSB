@@ -21,6 +21,8 @@ my $manufacturer = "";
 my $product      = "";
 my $serial       = "";
 my $magic        = 0xAA;
+my $s1           = 1; #1 = pulse high, 0 = pulse low
+my $s2           = 1; #1 = pulse high, 0 = pulse low
 
 my $result = GetOptions(
   "p=s"       => \$productId,
@@ -28,15 +30,17 @@ my $result = GetOptions(
   "mfg=s"     => \$manufacturer,
   "product=s" => \$product,
   "serial=s"  => \$serial,
+  "s1=i"       => \$s1,
+  "s2=i"       => \$s1,
 );
 
-my $dut = AttenSwitch->new();
+my $dut = AttenSwitch->new(PID=>0x00ff, SERIAL=>"32E00360");
 $result = $dut->connect();
 if ( $result == AttenSwitch::SUCCESS ) {
   print("Got device\n");
 }
 
-my $stringAddr = 0x10;
+my $stringAddr = 0x20;
 $dut->writeEE( 1, pack( "vv", hex($vendorId), hex($productId) ) );
 $dut->writeEE( 5, pack( "vC", $stringAddr,    length($manufacturer) ) );
 if ( length($manufacturer) ) {
@@ -55,6 +59,9 @@ if ( length($serial) ) {
   $dut->writeEE( $stringAddr, $serial );
 }
 $stringAddr += length($serial);
+
+$dut->writeEE(0xe, pack("C",$s1));
+$dut->writeEE(0xf, pack("C",$s2));
 
 $dut->writeEE( 0, pack( "C", $magic ) );
 
