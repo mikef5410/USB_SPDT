@@ -43,21 +43,11 @@ extern "C" {
   } pkttype_t;
 
   typedef enum {
-    ATT_0DB = 0,
-    ATT_10DB,
-    ATT_20DB,
-    ATT_30DB,
-    ATT_40DB,
-    ATT_50DB,
-    ATT_60DB,
-    ATT_70DB
-  } attenSetting_t; 
-
-  typedef enum {
     PROD_UNKNOWN = 0xff,
     PROD_STACKLIGHT = 1,
     PROD_MAPLEOLT = 2,
     PROD_ATTEN70 = 3,
+    PROD_SPDT = 4,
   } product_t;
   
   typedef enum {
@@ -76,24 +66,6 @@ extern "C" {
     FLOW_DEBUGSHELL,
   } cmdflow_t;
 
-  typedef enum {
-    J1 = 0,
-    J2,
-    J3,
-    J4,
-    J5,
-    J6,
-    J7,
-    J8
-  } sp8tSel_t;
-
-  typedef enum {
-    OFF = 0,
-    RED = 1,
-    YEL = 2,
-    GRN = 4
-  } stacklightColor_t;
-      
   // define some generic payloads for parameterized commands
   //   For example, RESET now takes an argument for type of reset
   typedef struct __attribute__((__packed__)) {

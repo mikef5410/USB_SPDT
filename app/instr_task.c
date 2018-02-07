@@ -154,14 +154,9 @@ __attribute__((noreturn)) portTASK_FUNCTION(vInstrumentTask, pvParameters) {
   (void)pvParameters;
   int32_t rval = 0;
   portTickType waitIfFull = 10;
-  attenSetting_t atten;
   spdtSel_t swSel;
   spdtSetting_t swState;
-  sp8tSel_t muxSel;
-  uint8_t color;
-  uint32_t onTime;
-  uint32_t offTime;
-  uint32_t count;
+
   
   bzero(instrInpktBuf, sizeof(inbufBytes));  // null the storage of the packets
   bzero(instrOutpktBuf,sizeof(outbufBytes));
@@ -193,28 +188,10 @@ __attribute__((noreturn)) portTASK_FUNCTION(vInstrumentTask, pvParameters) {
         copyPacket(instrInpktBuf, instrOutpktBuf);
         break;
 
-      case CMD_ATT: //Payload is a 16-bit integer representing attenSetting_t enum
-        atten = (attenSetting_t)le16toh(instrInpktBuf->payload.pl_uint16.a_uint16);
-        setAttenSetting(atten);
-        break;
-
       case CMD_SPDT: //Payload is two bytes: { SW1|SW2, J1|J2 }
         swSel = (spdtSel_t)instrInpktBuf->payload.pl_2uchar.uchar1;
         swState = (spdtSetting_t)instrInpktBuf->payload.pl_2uchar.uchar2;
         spdt_set(swSel, swState);
-        break;
-
-      case CMD_SP8T: //Payload is one byte {J1|J2|J3|J4|J5|J6|J7|J8}
-        muxSel = (sp8tSel_t)instrInpktBuf->payload.pl_uchar.a_uchar;
-        setSP8T(muxSel);
-        break;
-
-      case CMD_NOTIFY: //Payload is 1 byte color, 3 unsigned long: onTime, offTime, count
-        color = instrInpktBuf->payload.pl_notifyLight.color;
-        onTime = le32toh(instrInpktBuf->payload.pl_notifyLight.onTime);
-        offTime = le32toh(instrInpktBuf->payload.pl_notifyLight.offTime);
-        count = le32toh(instrInpktBuf->payload.pl_notifyLight.count);
-        stackNotify(color, onTime, offTime, count);
         break;
 
       case CMD_WRITEEE: //

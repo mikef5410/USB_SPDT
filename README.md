@@ -1,6 +1,6 @@
-## USB_Attenuator_Switch_Stacklight
+## USB_SPDT
 
-USB control of HP step attenuators, Coax Switches, and Stacklights
+USB control of Standard SPDT Coax-switches
 
 ![USB Microwave Attenuator](/doc/usb_atten.jpg)
 
@@ -34,7 +34,3 @@ So, here's an example of a stacklight:
 
 ![Stacklight](/doc/stacklight.jpg)
 
-And, running a couple of Dow-Key SP8T's and Dow-Key SPDT's through a breakout
-board:
-
-![coaxSwitches](/doc/coaxSwitches.jpg)

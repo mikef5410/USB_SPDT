@@ -62,9 +62,7 @@ void vhvTimerExpired(xTimerHandle pxTimer)
   /* Do not use a block time if calling a timer API function from a timer callback
      function, as doing so could cause a deadlock! */
   xTimerStop( pxTimer, 0 );
-  if (! stacklightForceHV ) {
-    hvOn(0);
-  }
+  hvOn(0);
 }
 
   

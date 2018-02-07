@@ -396,6 +396,18 @@ void readEEprom(void)
   if (strPtr && strLen) {
     copyFromEE(serialNumber, strPtr, strLen);
   }
+
+  //Byte: s1_pulseHigh (should be 1 or 0)
+  strLen = eeprom9366_read(0xE);
+  if (strLen == 0 || strLen == 1) {
+    s1_setPulseHigh(strLen);
+  }
+
+  //Byte: s2_pulseHigh (should be 1 or 0)
+  strLen = eeprom9366_read(0xF);
+  if (strLen == 0 || strLen == 1) {
+    s2_setPulseHigh(strLen);
+  }
   
 }
 

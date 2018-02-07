@@ -58,10 +58,7 @@ extern "C" {
 #include "bsp.h"  
 #include "hiresTimer.h"
 #include "usbcmdio.h"
-#include "atten.h"
-#include "spdtAux.h"
-#include "sp8t.h"
-#include "stacklight.h"
+#include "spdt.h"
 #include "instr_task.h"  
   
 #define TESTEEPROM 1

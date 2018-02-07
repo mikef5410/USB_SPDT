@@ -59,17 +59,12 @@ BSPGLOBAL uint32_t hvState BSPPRESET(0);
 #define S2U BSPGPIO(C,2)
 #define S2D BSPGPIO(C,3)
 
-#define S3U BSPGPIO(C,4)
-#define S3D BSPGPIO(C,5)
-
-#define S4U BSPGPIO(C,6)
-#define S4D BSPGPIO(C,7)
+#define SWEnable BSPGPIO(C,4)
 
 #define AUX0 BSPGPIO(C,8)
 #define AUX1 BSPGPIO(C,9)
 #define AUX2 BSPGPIO(C,10)
 #define AUX3 BSPGPIO(C,11)
-#define AUX4 BSPGPIO(C,12)
 
 #define GREENLED BSPGPIO(B,0)
 #define REDLED BSPGPIO(A,0)

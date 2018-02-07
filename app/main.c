@@ -5,13 +5,13 @@
 #include "instr_task.h"
 
 xTaskHandle *xLED1TaskHandle;
-xTaskHandle *xStackTaskHandle;
+xTaskHandle *xSPDTTaskHandle;
 xTaskHandle *xUSBCDCACMTaskHandle;
 xTaskHandle *xDebugShellTaskHandle;
 xTaskHandle *xInstrumentTaskHandle;
 
 extern portTASK_FUNCTION(vUSBCDCACMTask, pvParameters); //in cdcacm.c
-extern portTASK_FUNCTION(vStackTask, pvParamaters);
+extern portTASK_FUNCTION(vSPDTTask, pvParamaters);
 extern portTASK_FUNCTION(vInstrumentTask, pvParameters);
 static portTASK_FUNCTION(vLEDTask1, pvParameters)
 {
@@ -65,11 +65,6 @@ int main(void)
 
   qStatus = xTaskCreate(vLEDTask1, "LED Task 1", 64, NULL, (tskIDLE_PRIORITY + 1UL),
                         (xTaskHandle *) &xLED1TaskHandle);
-
-
-  qStatus = xTaskCreate(vStackTask, "Stacklight", 128, NULL, (tskIDLE_PRIORITY + 1UL),
-                        (xTaskHandle *) &xStackTaskHandle);
-
 
   qStatus = xTaskCreate(vDebugShell, "Debug shell", 1024, NULL, (tskIDLE_PRIORITY + 1UL),
                         (xTaskHandle *) &xDebugShellTaskHandle);
