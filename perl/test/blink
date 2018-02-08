@@ -15,7 +15,7 @@ use lib "$Bin";
 
 use Data::Dumper qw(Dumper);
 
-my $sw = shift(@ARGV);
+my $sw = shift(@ARGV) || 0;
 
 use AttenSwitch;
 
