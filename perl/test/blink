@@ -1,0 +1,32 @@
+#!/usr/bin/perl
+#
+
+use strict;
+use warnings;
+use feature qw(switch);
+no warnings 'experimental';
+
+#Where to find our library and auxiliary code.
+use FindBin qw($Bin);
+use lib $ENV{ATTENSW} || "/projects/usbAtten_controller/perl";
+
+use lib "$Bin/..";
+use lib "$Bin";
+
+use Data::Dumper qw(Dumper);
+
+my $sw = shift(@ARGV);
+
+use AttenSwitch;
+
+my $dut = AttenSwitch->new( PID => 0x0004 );    #SERIAL=>"138001E0");
+my $result = $dut->connect();
+if ( $result == AttenSwitch::SUCCESS ) {
+  print("Got device\n");
+}
+
+$sw = ($sw != 0);
+
+my $res = $dut->blink($sw);
+exit;
+
