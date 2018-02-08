@@ -816,5 +816,6 @@ use Class::Enum (
   PROD_STACKLIGHT => { ordinal => 1 },
   PROD_MAPLEOLT   => { ordinal => 2 },
   PROD_ATTEN70    => { ordinal => 3 },
+  PROD_DUALSPDT   => { ordinal => 4 },
 );
 1;
