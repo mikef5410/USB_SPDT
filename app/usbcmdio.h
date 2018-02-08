@@ -40,6 +40,7 @@ extern "C" {
     CMD_WRITEEE,    // 14 0x0E  write one byte of EEprom, 2-byte address (LE), 1 byte data
     CMD_SPDT,       // 15 0x0F  set one of two spdts, 2 bytes { SW1 | SW2, J1|J2 }
     CMD_ERASEALL,    // 16 0x10  erase al of the EEProm
+    CMD_BLINK,      //  17 0x11  blink LED on board to identify (1 byte, 0 for off, nonzero on)
   } pkttype_t;
 
   typedef enum {

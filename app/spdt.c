@@ -6,8 +6,10 @@
 *
 * Description: SPDT 12V SPDT coax switches 
 * Dow-Key 401Y-421132A 12V w/ TTL controls (Latching)
-* Switch S1 is controlled by Aux1 (A,J1-C) and Aux2 (B,J2-C)
-* Switch S2 is controlled by Aux3 (A,J1-C) and Aux4 (B,J2-C)
+* Ducommun 2SET1T11JA 12V Pulse high (Latching)
+* Switch S1 is controlled by S1U (A,SW1-1,P1-1) and S1D (B,SW1-2,P1-2)
+* Switch S2 is controlled by S2U (A,SW2-1,P1-3) and S2D (B,SW2-2,P1-4)
+* Ground is P1-14,P1-16
 *******************************************************************************/
 //#define TRACE_PRINT 1
 
