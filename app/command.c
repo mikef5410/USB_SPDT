@@ -73,12 +73,12 @@ static int cmd_hv(int argc, char **argv)
 
 static int cmd_sw1(int argc, char **argv)
 {
-  if (argc == 1) {
-    if (*argv[0] == 'A' || *argv[0] == 'a') {
+  if (argc == 2) {
+    if (*argv[1] == 'A' || *argv[1] == 'a') {
       s1_j1sel(1);
       return(0);
     }
-    if (*argv[0] == 'B' || *argv[0] == 'b') {
+    if (*argv[1] == 'B' || *argv[1] == 'b') {
       s1_j1sel(0);
       return(0);
     }
@@ -89,12 +89,12 @@ static int cmd_sw1(int argc, char **argv)
 
 static int cmd_sw2(int argc, char **argv)
 {
-  if (argc == 1) {
-    if (*argv[0] == 'A' || *argv[0] == 'a') {
+  if (argc == 2) {
+    if (*argv[1] == 'A' || *argv[1] == 'a') {
       s2_j1sel(1);
       return(0);
     }
-    if (*argv[0] == 'B' || *argv[0] == 'b') {
+    if (*argv[1] == 'B' || *argv[1] == 'b') {
       s2_j1sel(0);
       return(0);
     }

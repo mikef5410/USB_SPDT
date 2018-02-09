@@ -18,7 +18,7 @@
 #define GLOBAL_SPDT
 #include "spdt.h"
 
-#define SW_DELAY 60
+#define SW_DELAY 80
 static uint8_t s1_pulseHigh=1; //1 Means common on the switch is GND
 static uint8_t s2_pulseHigh=1; //0 Means common on the switch is +12
 
@@ -34,6 +34,7 @@ void s1_setPulseHigh(int setting)
     gpio_set(S1U);
   }
 }
+
 void s2_setPulseHigh(int setting)
 {
   gpio_clear(SWEnable);
