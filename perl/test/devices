@@ -1,0 +1,17 @@
+#!/usr/bin/perl
+#
+use Device::USB;
+use Data::Dumper qw(Dumper);
+
+my $usb=Device::USB->new();
+my $ls = $usb->list_devices(0x4161,undef);
+
+foreach my $dev (@{$ls}) {
+  my $vend = $dev->{descriptor}->{idVendor};
+  my $prod = $dev->{descriptor}->{idProduct};
+  my $serIx = $dev->{descriptor}->{iSerialNumber};
+  my $serial = $dev->serial_number();
+  my $mfg = $dev->manufacturer();
+  my $product = $dev->product();
+  printf("0x%04x 0x%04x %s %s %s\n",$vend,$prod,$mfg,$product,$serial);
+}

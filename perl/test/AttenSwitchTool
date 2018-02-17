@@ -1,0 +1,138 @@
+#!/usr/bin/perl
+#
+
+
+use strict;
+use warnings;
+use FindBin qw($Bin);
+
+use lib $ENV{BCOM_PERL} || "/projects/Bcom-perl";
+use lib $ENV{PERL_GPIB} || "/projects/gpib";
+use lib "$Bin/..";
+use lib $Bin;
+
+use Module::Runtime qw(use_module use_package_optimistically);
+use Device::USB;
+use Data::Dumper qw(Dumper);
+
+use Gtk3 '-init';
+use Gtk3::SimpleList;
+use Glib 'TRUE', 'FALSE';
+$| = 1;
+
+my $builder = Gtk3::Builder->new();
+my $gladef  = "AttenSwitchTool.glade";
+my $glade   = $gladef;
+my $VID = 0x4161;
+my $usb = Device::USB->new();
+my @Devices = ();
+
+
+
+if ( -f "$Bin/$gladef" ) {
+  $glade = "$Bin/$gladef";
+} else {
+
+  #Search @INC for my glade file
+  foreach my $d (@INC) {
+    $glade = $d . "/" . $gladef;
+    last if ( -f $glade );
+  }
+}
+$builder->add_from_file($glade);
+$builder->connect_signals();
+
+$builder->get_object('mainTopWin')->show_all;
+setupBrowserTree();
+Gtk3->main;    #Start the event loop
+exit(0);
+
+
+sub gtk_main_quit {
+  Gtk3->main_quit();
+}
+
+sub statusbar {
+  my $str = shift;
+
+  my $StatusBar=$builder->get_object('statusbar');
+  $StatusBar->remove_all(1);
+  $StatusBar->push( 1, $str );
+}
+
+#Scan the usb bus and build tree
+sub rescanButton_clicked_cb {
+  my $widget = shift;
+  my $data   = shift;
+
+  my $usbListStore = $builder->get_object('usbListStore');
+  clearListStore($usbListStore);
+  @Devices=();
+  my $ix=0;
+  my $ls = $usb->list_devices($VID,undef);
+  foreach my $dev (@{$ls}) {
+    my $vend = $dev->{descriptor}->{idVendor};
+    my $prod = $dev->{descriptor}->{idProduct};
+    my $serIx = $dev->{descriptor}->{iSerialNumber};
+    my $serial = $dev->serial_number();
+    my $mfg = $dev->manufacturer();
+    my $product = $dev->product();
+    my $iter = $usbListStore->insert_with_values(-1,0=>sprintf("0x%04x",$vend),1=>sprintf("0x%04x",$prod),2=>$mfg,3=>$product,4=>$serial,5=>$ix);
+    $Devices[$ix++]=$dev;
+  }
+  statusbar(sprintf("%d devices found.",$ix));
+
+}
+
+sub clearListStore {
+  my $l = shift;
+  my $iter = $l->get_iter_from_string("0");
+
+  my $ok=1;
+  while ($iter && $ok) {
+    $ok=$l->remove($iter);
+  }
+}
+  
+sub setupBrowserTree {
+  my $t = $builder->get_object('browserTreeView');
+
+  $t->append_column(makeColumn(0,"Vid"));
+  $t->append_column(makeColumn(1,"Pid"));
+  $t->append_column(makeColumn(2,"Mfg"));
+  $t->append_column(makeColumn(3,"Product"));
+  $t->append_column(makeColumn(4,"Serial"));
+}
+
+sub makeColumn {
+  my $col = shift;
+  my $title = shift;
+  
+  my $column = Gtk3::TreeViewColumn->new_with_attributes($title,Gtk3::CellRendererText->new,text=>$col);
+  $column->set_resizable(TRUE);
+  return($column);
+}
+#Cause selected device to blink
+sub blinkButton_clicked_cb {
+  my $widget = shift;
+  my $data   = shift;
+}
+
+sub selectButton_clicked_cb {
+  my $widget = shift;
+  my $data   = shift;
+}
+
+sub browserTreeView_selected {
+  my $widget = shift;
+  my $data = shift;
+
+  my $t = $builder->get_object('browserTreeView');
+  my ($path,$col)=$t->get_cursor();
+  my $model = $t->get_model();
+  my $iter = $model->get_iter($path);
+  my $dev = $Devices[$model->get_value($iter, 5)];
+  my $prod = $model->get_value($iter,3);
+  print $prod,"\n";
+  #print Dumper($dev);
+}
