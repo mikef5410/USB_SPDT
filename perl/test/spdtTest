@@ -25,10 +25,6 @@ if ( $result == AttenSwitch::SUCCESS ) {
 my $swSel;
 my $s;
 
-SW1: {
-  if ( $sw eq "1" ) { $swSel = AttenSwitch::SPDTSEL->SW1; last SW1; }
-  if ( $sw eq "2" ) { $swSel = AttenSwitch::SPDTSEL->SW2; last SW1; }
-}
 
 SW: {
   if ( $setting eq "1" || $setting eq "A" ) {
@@ -41,6 +37,9 @@ SW: {
   }
 }
 
-$dut->spdt( $swSel, $s );
+if ( $sw eq "1" || $sw eq "3" ) { $dut->spdt(AttenSwitch::SPDTSEL->SW1,$s); }
+if ( $sw eq "2" || $sw eq "3" ) { $dut->spdt(AttenSwitch::SPDTSEL->SW2,$s); }
+
+
 printf("ok\n");
 exit;
