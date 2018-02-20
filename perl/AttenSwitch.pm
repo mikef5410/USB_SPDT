@@ -257,30 +257,34 @@ sub connect {
   my @pids = $self->has_PID() ? $self->PID() : @{ AttenSwitch->validPids() };
   my $vid;
   my $pid;
-  my $dev;
+  my $dev = $self->dev;
 
-  foreach $vid (@vids) {
-    foreach $pid (@pids) {
-      if ( $self->has_SERIAL ) {
-        $dev = $self->usb->find_device_if(
-          sub {
-            return ( ( $_->idVendor == $vid ) && ( $_->idProduct == $pid ) && ( $_->serial_number eq $self->SERIAL ) );
-          }
-        );
-      } else {
-        $dev = $self->usb->find_device( $vid, $pid );
-      }
-      if ( defined $dev ) {
-        goto FOUND;
+  if (! defined($dev)) {
+    foreach $vid (@vids) {
+      foreach $pid (@pids) {
+        if ( $self->has_SERIAL ) {
+          $dev = $self->usb->find_device_if(
+            sub {
+              return ( ( $_->idVendor == $vid ) && ( $_->idProduct == $pid ) && ( $_->serial_number eq $self->SERIAL ) );
+            }
+           );
+        } else {
+          $dev = $self->usb->find_device( $vid, $pid );
+        }
+        if ( defined $dev ) {
+          goto FOUND;
+        }
       }
     }
   }
+  
   if ( !defined $dev ) {
     print "ERROR: could not find any AttenSwitch devices \n";
     return AttenSwitch->FAIL;
   }
 
-FOUND:
+ FOUND:
+  $self->dev($dev);
   $self->VID( $dev->idVendor() );
   $self->PID( $dev->idProduct() );
   $self->SERIAL( $dev->serial_number() );
@@ -308,7 +312,7 @@ FOUND:
     }
     printf("\n") if ( $self->verbose() );
   }
-  my $claim = $dev->claim_interface(0x2);    #Interface #2 is my command I/O interface
+  my $claim = $dev->claim_interface(0x2); #Interface #2 is my command I/O interface
   printf("Claim returns  $claim \n") if ( $self->verbose() );
   $self->dev($dev);
 
@@ -817,5 +821,6 @@ use Class::Enum (
   PROD_MAPLEOLT   => { ordinal => 2 },
   PROD_ATTEN70    => { ordinal => 3 },
   PROD_DUALSPDT   => { ordinal => 4 },
-);
+ );
+
 1;
