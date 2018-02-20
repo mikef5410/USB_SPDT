@@ -60,6 +60,10 @@ Gtk3->main;    #Start the event loop
 exit(0);
 
 sub gtk_main_quit {
+  if (defined($currentDev)) {
+    $currentDev->disconnect();
+    undef($currentDev);
+  }
   Gtk3->main_quit();
 }
 
