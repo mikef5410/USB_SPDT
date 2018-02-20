@@ -182,7 +182,7 @@ sub browserTreeView_selected {
   if ( defined($currentDev) && defined( $currentDev->dev ) ) {
     $currentDev->disconnect();
   }
-  $currentDev = AttenSwitch->new( dev => $dev );
+  $currentDev = AttenSwitch->new( device => $dev );
   $currentDev->connect();
   statusbar( sprintf( "connected to %s %s", $prod, $model->get_value( $iter, 4 ) ) );
 

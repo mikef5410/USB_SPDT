@@ -235,6 +235,11 @@ has 'product' => (
   is      => 'rw',
   isa     => 'Str',
   default => '',
+ );
+
+has 'device' => (
+  is => 'rw',
+  default => undef, 
 );
 
 =head2 METHODS
@@ -259,8 +264,8 @@ sub connect {
   my $pid;
   my $dev;
 
-  if (defined($self->{dev})) {
-    $dev=$self->{dev};
+  if ( defined($self->device) ) {
+    $dev=$self->device;
     goto FOUND;
   }
   foreach $vid (@vids) {
