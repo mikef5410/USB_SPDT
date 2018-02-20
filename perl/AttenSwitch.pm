@@ -257,23 +257,25 @@ sub connect {
   my @pids = $self->has_PID() ? $self->PID() : @{ AttenSwitch->validPids() };
   my $vid;
   my $pid;
-  my $dev = $self->dev;
+  my $dev;
 
-  if (! defined($dev)) {
-    foreach $vid (@vids) {
-      foreach $pid (@pids) {
-        if ( $self->has_SERIAL ) {
-          $dev = $self->usb->find_device_if(
-            sub {
-              return ( ( $_->idVendor == $vid ) && ( $_->idProduct == $pid ) && ( $_->serial_number eq $self->SERIAL ) );
-            }
-           );
-        } else {
-          $dev = $self->usb->find_device( $vid, $pid );
-        }
-        if ( defined $dev ) {
-          goto FOUND;
-        }
+  if (defined($self->{dev})) {
+    $dev=$self->{dev};
+    goto FOUND;
+  }
+  foreach $vid (@vids) {
+    foreach $pid (@pids) {
+      if ( $self->has_SERIAL ) {
+        $dev = $self->usb->find_device_if(
+          sub {
+            return ( ( $_->idVendor == $vid ) && ( $_->idProduct == $pid ) && ( $_->serial_number eq $self->SERIAL ) );
+          }
+         );
+      } else {
+        $dev = $self->usb->find_device( $vid, $pid );
+      }
+      if ( defined $dev ) {
+        goto FOUND;
       }
     }
   }

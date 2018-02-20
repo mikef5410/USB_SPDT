@@ -34,7 +34,7 @@ my $result = GetOptions(
   "s2=i"       => \$s1,
 );
 
-my $dut = AttenSwitch->new(PID=>0x00ff, SERIAL=>"32E00360");
+my $dut = AttenSwitch->new(PID=>0x00ff, SERIAL=>"32E00370");
 $result = $dut->connect();
 if ( $result == AttenSwitch::SUCCESS ) {
   print("Got device\n");
