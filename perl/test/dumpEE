@@ -17,7 +17,7 @@ my $sw = shift(@ARGV);
 
 use AttenSwitch;
 
-my $dut    = AttenSwitch->new(PID => 0x0004);
+my $dut = AttenSwitch->new( PID => 0x0004 );
 my $result = $dut->connect();
 if ( $result == AttenSwitch::SUCCESS ) {
   print("Got device\n");
@@ -49,6 +49,6 @@ sub bufdump {
     }
     printf( "%02x ", $val );
   }
-  my $adj = 16 - ( $j % 16 );
+  my $adj = ( $j % 16 > 0 ) ? 16 - ( $j % 16 ) : 0;
   print '   ' x $adj, "   ", $ascii, "\n";
 }

@@ -20,6 +20,9 @@ use AttenSwitch;
 use Gtk3 '-init';
 use Gtk3::SimpleList;
 use Glib 'TRUE', 'FALSE';
+
+## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
+
 $| = 1;
 
 my $builder      = Gtk3::Builder->new();
@@ -33,7 +36,7 @@ my $rescanActive = 0;
 my $s1s2Gang     = 0;
 my $gladestr     = "";
 
-loadUIfromData(\$gladestr);
+loadUIfromData( \$gladestr );
 if ( length($gladestr) ) {
   $builder->add_from_string($gladestr);
 } else {
@@ -60,7 +63,7 @@ Gtk3->main;    #Start the event loop
 exit(0);
 
 sub gtk_main_quit {
-  if (defined($currentDev)) {
+  if ( defined($currentDev) ) {
     $currentDev->disconnect();
     undef($currentDev);
   }
@@ -68,9 +71,9 @@ sub gtk_main_quit {
 }
 
 sub loadUIfromData {
-  my $strref=shift;
+  my $strref = shift;
 
-  while(<DATA>) {
+  while (<DATA>) {
     s/^\s*$//g;
     $$strref .= $_;
   }
@@ -146,8 +149,7 @@ sub makeColumn {
   my $col   = shift;
   my $title = shift;
 
-  my $column =
-    Gtk3::TreeViewColumn->new_with_attributes( $title, Gtk3::CellRendererText->new, text => $col );
+  my $column = Gtk3::TreeViewColumn->new_with_attributes( $title, Gtk3::CellRendererText->new, text => $col );
   $column->set_resizable(TRUE);
   return ($column);
 }
@@ -191,24 +193,28 @@ SW: {
       $builder->get_object("spdtFrame")->set_sensitive(0);
       $builder->get_object("sp8tFrame")->set_sensitive(0);
       $builder->get_object("attenFrame")->set_sensitive(0);
+      $builder->get_object("spdtPolarityFrame")->set_sensitive(0);
       last SW;
     }
     if ( $currentDev->PID == 0x0002 ) {    #MapleOLT test rig
       $builder->get_object("spdtFrame")->set_sensitive(1);
       $builder->get_object("sp8tFrame")->set_sensitive(1);
       $builder->get_object("attenFrame")->set_sensitive(0);
+      $builder->get_object("spdtPolarityFrame")->set_sensitive(1);
       last SW;
     }
     if ( $currentDev->PID == 0x0003 ) {    #Attenuator
       $builder->get_object("spdtFrame")->set_sensitive(0);
       $builder->get_object("sp8tFrame")->set_sensitive(0);
       $builder->get_object("attenFrame")->set_sensitive(1);
+      $builder->get_object("spdtPolarityFrame")->set_sensitive(0);
       last SW;
     }
     if ( $currentDev->PID == 0x0004 ) {    #Dual SPDT
       $builder->get_object("spdtFrame")->set_sensitive(1);
       $builder->get_object("sp8tFrame")->set_sensitive(0);
       $builder->get_object("attenFrame")->set_sensitive(0);
+      $builder->get_object("spdtPolarityFrame")->set_sensitive(1);
       last SW;
     }
 
@@ -370,11 +376,47 @@ SW: {
 }
 
 sub EEpromViewport_map_cb {
-  printf("EEprom tab entered.\n");
+  return if ( !defined($currentDev) );
+
+  #printf("EEprom tab entered.\n");
+
+  my $magic       = 0 + $currentDev->eeMagic();
+  my $vidEntry    = $builder->get_object('vidEntry');
+  my $pidEntry    = $builder->get_object('pidEntry');
+  my $prodEntry   = $builder->get_object('prodEntry');
+  my $serialEntry = $builder->get_object('serialEntry');
+  my $extraEntry  = $builder->get_object('extraEntry');
+  my $s1High      = $builder->get_object('s1High');
+  my $s2High      = $builder->get_object('s2High');
+
+  # if ($magic != 0xAA) { #Invalid EEprom
+  #   $vidEntry->set_text("");
+  #   $pidEntry->set_text("");
+  #   $prodEntry->set_text("");
+  #   $serialEntry->set_text("");
+  #   $extraEntry->set_text("");
+  #   $s1High->set_active(0);
+  #   $s2High->set_active(0);
+  #   return;
+  # }
+
+  my $strings = $currentDev->readEEStrings();
+  my ( $vid,   $pid )   = $currentDev->eeVidPid();
+  my ( $s1pol, $s2pol ) = $currentDev->eePolarity();
+
+  $vidEntry->set_text( sprintf( "0x%04x", $vid ) );
+  $pidEntry->set_text( sprintf( "0x%04x", $pid ) );
+  $prodEntry->set_text( $strings->[1] );
+  $serialEntry->set_text( $strings->[2] );
+  $extraEntry->set_text( $strings->[3] );
+
+  $s1High->set_active( $s1pol != 0 );
+  $s2High->set_active( $s2pol != 0 );
+  return;
 }
 
 sub aboutActivated {
-  my $about_dialog=$builder->get_object('aboutDialog');
+  my $about_dialog = $builder->get_object('aboutDialog');
 
   $about_dialog->run();
   $about_dialog->hide();
@@ -384,38 +426,151 @@ sub writePolarity_clicked {
   my $widget = shift;
   my $data   = shift;
 
-  return if (!defined($currentDev));
+  return if ( !defined($currentDev) );
+  $currentDev->blink(1);
+
+  if ( !confirmWrite() ) {
+    $currentDev->blink(0);
+    return;
+  }
+  my $s1pol = $builder->get_object('s1High')->get_active();
+  my $s2pol = $builder->get_object('s2High')->get_active();
+  $currentDev->eePolarity( $s1pol, $s2pol );
+
+  $currentDev->blink(0);
+  return;
 }
 
-sub writeExtraID_clicked {
+sub writeStrings_clicked {
   my $widget = shift;
   my $data   = shift;
 
-  return if (!defined($currentDev));
-}
+  return if ( !defined($currentDev) );
+  $currentDev->blink(1);
 
-sub writeSerial_clicked {
-  my $widget = shift;
-  my $data   = shift;
-
-  return if (!defined($currentDev));
-}
-
-sub writeProdString_clicked {
-  my $widget = shift;
-  my $data   = shift;
-
-  return if (!defined($currentDev));
+  if ( !confirmWrite() ) {
+    $currentDev->blink(0);
+    return;
+  }
+  my $strings;
+  $strings->[0] = "";
+  $strings->[1] = $builder->get_object('prodEntry')->get_text();
+  $strings->[2] = $builder->get_object('serialEntry')->get_text();
+  $strings->[3] = $builder->get_object('extraEntry')->get_text();
+  $currentDev->writeEEStrings($strings);
+  $currentDev->blink(0);
 }
 
 sub writeVidPid_clicked {
   my $widget = shift;
   my $data   = shift;
 
-  return if (!defined($currentDev));
+  return if ( !defined($currentDev) );
+
+  $currentDev->blink(1);
+  if ( !confirmWrite() ) {
+    $currentDev->blink(0);
+    return;
+  }
+
+  my $vid = hex( $builder->get_object('vidEntry')->get_text() );
+  my $pid = hex( $builder->get_object('pidEntry')->get_text() );
+  $currentDev->eeMagic(0xAA);
+  $currentDev->eeVidPid( $vid, $pid );
+  $currentDev->blink(0);
 }
 
+sub eraseEEbutton_clicked_cb {
+  my $widget = shift;
+  my $data   = shift;
 
+  return if ( !defined($currentDev) );
+
+  $currentDev->blink(1);
+  if ( !confirmWrite() ) {
+    $currentDev->blink(0);
+    return;
+  }
+  $currentDev->eraseAllEE();
+  $currentDev->blink(0);
+  return;
+}
+
+sub confirmWrite {
+  my $message = shift || "OK to Write?";
+  my $dialog = $builder->get_object("OKtoWriteDialog");
+
+  my $label = $builder->get_object("OKtoWriteLabel");
+  $label->set_text($message);
+
+  my $result = $dialog->run();
+  $dialog->hide();
+
+  return ($result);
+}
+
+sub writeConfirmedClicked {
+  my $widget = shift;
+  my $data   = shift;
+
+  $data->response(1);
+}
+
+sub writeCancelClicked {
+  my $widget = shift;
+  my $data   = shift;
+
+  $data->response(0);
+}
+
+sub dumpCloseClicked {
+  my $widget = shift;
+  my $data   = shift;
+
+  $data->response(1);
+}
+
+sub dumpButton_clicked {
+  my $widget = shift;
+  my $data   = shift;
+
+  my $textView   = $builder->get_object('eeDumpTextView');
+  my $dumpDialog = $builder->get_object('eeDumpWindow');
+
+  my $textBuffer = Gtk3::TextBuffer->new();
+  $textView->set_buffer($textBuffer);
+  my $buf = $currentDev->readEE( 0, $currentDev->eepromSize );
+  $textBuffer->set_text( bufdump($buf) );
+  $dumpDialog->run();
+  $dumpDialog->hide();
+}
+
+sub bufdump {
+  my $buf = shift;
+
+  my $ascii  = "";
+  my $j      = 0;
+  my $outbuf = "";
+
+  $outbuf = sprintf("0000 - ");
+  for ( $j = 0 ; $j < length($buf) ; $j++ ) {
+    my $val = unpack( "C", substr( $buf, $j, 1 ) );
+    if ( $j && !( $j % 16 ) ) {
+      $outbuf .= sprintf("   $ascii");
+      $ascii = "";
+      $outbuf .= sprintf( "\n%04x - ", $j );
+    }
+    if ( ( $val < 0x20 ) || ( $val > 0x7E ) ) {
+      $ascii .= '.';
+    } else {
+      $ascii .= chr($val);
+    }
+    $outbuf .= sprintf( "%02x ", $val );
+  }
+  my $adj = ( $j % 16 > 0 ) ? 16 - ( $j % 16 ) : 0;
+  $outbuf .= sprintf( '   ' x $adj . "   " . $ascii . "\n" );
+  return ($outbuf);
+}
 
 __DATA__
 

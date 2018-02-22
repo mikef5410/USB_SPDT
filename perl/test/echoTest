@@ -13,7 +13,7 @@ use lib "$Bin";
 
 use AttenSwitch;
 
-my $dut    = AttenSwitch->new(PID=>0x0004);
+my $dut = AttenSwitch->new( PID => 0x0004 );
 my $result = $dut->connect();
 if ( $result == AttenSwitch::SUCCESS ) {
   print("Got device\n");

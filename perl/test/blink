@@ -25,7 +25,7 @@ if ( $result == AttenSwitch::SUCCESS ) {
   print("Got device\n");
 }
 
-$sw = ($sw != 0);
+$sw = ( $sw != 0 );
 
 my $res = $dut->blink($sw);
 exit;
