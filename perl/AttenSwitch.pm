@@ -242,6 +242,13 @@ has 'device' => (
   default => undef, 
 );
 
+has 'eepromSize' => (
+  is => 'rw',
+  isa => "Int",
+  default => 0x1ff,
+);
+
+
 =head2 METHODS
 
 =over 4
@@ -734,6 +741,117 @@ sub dump {
   my $adj = 16 - ( $j % 16 );
   print '   ' x $adj, "   ", $ascii, "\n";
 }
+
+# EEProm Memory Map
+# 0 - Magic. 0xAA if it's not there, don't read eeprom
+# 1,2 - VID little endian
+# 3,4 - PID little endian
+# 5,6 - Mfg pointer. Address of Mfg string. If ptr or length are zero, don't read.
+# 7 - Mfg length
+# 8,9 - Product string pointer (LE).
+# A - Product string length
+# B,C - Serial number pointer (LE).
+# D  - Serial number length
+# E  - S1 is pulse high (boolean)
+# F  - S2 is pulse high (boolean)
+# 10,11 - Extra string ptr.
+# 12 - Extra string length.
+#
+# Strings should start at 0x30 to leave room.
+
+=over 4
+
+=item B<< $attenswitch->eeMagic($value) >>
+
+Read/Write the magic value from EEprom. If called without args, read. Else write.
+Magic is one byte, 0xAA to indicate EEprom is valid.
+
+=back
+
+=cut
+
+sub eeMagic {
+  my $self = shift;
+  my $val = shift; #number
+
+  if (defined($val)) { # Writing
+    $val = $val & 0xff;
+    $self->writeEE(0,pack("C",$val));
+  } else { #reading
+    $val = $self->readEE(0,1);
+  }
+  return($val);
+}
+
+=over 4
+
+=item B<< $attenswitch->eeVidPid($vid,$pid) >>
+
+Read/Write the VID and PID values from EEprom. If called without PID, read. Else write.
+VID will default to our default VID if undef. VID and PID are 16 bit numbers.
+
+=back
+
+=cut
+
+sub eeVidPid {
+  my $self = shift;
+  my $vid = shift || AttenSwitch->validVids()->[0];
+  my $pid = shift;
+
+  if (defined($pid)) { # Writing
+    $vid &= 0xffff;
+    $pid &= 0xffff;
+    $self->writeEE(1,pack("vv",$vid,$pid));
+  } else { #Reading
+    ($vid,$pid)=unpack("vv",$self->readEE(1,4));
+  }
+  return($vid,$pid);
+}
+
+sub GetEEStrings {
+  my $self = shift;
+
+  my @strings=("","","","");
+  my ($mfgP,$mfgL) = unpack("vC",readEE(5,3));
+  my ($prdP,$prdL) = unpack("vC",readEE(8,3));
+  my ($serP,$serL) = unpack("vC",readEE(0xb,3));
+  my ($extraP,$extraL) = unpack("vC",readEE(0x10,3));
+
+  if ($self->validStr($mfgP,$mfgL)) {
+    $strings[0] = readEE($mfgP,$mfgL);
+  }
+
+  if (v$self->alidStr($prdP,$prdL)) {
+    $strings[1] = readEE($prdP,$prdL);
+  }
+
+  if ($self->validStr($serP,$serL)) {
+    $strings[2] = readEE($serP,$serL);
+  }
+
+  if ($self->validStr($extraP,$extraL)) {
+    $strings[3] = readEE($extraP,$extraL);
+  }
+
+  return(\@strings);
+}
+
+
+sub validStr {
+  my $self = shift;
+  my $ptr = shift;
+  my $len = shift;
+
+  return(0) if ($ptr < 0x20);
+
+  return(0) if ($len == 0);
+
+  return (0) if ( ($ptr+$len) > $self->eepromSize );
+
+  return(1);
+}
+  
 __PACKAGE__->meta->make_immutable;
 1;
 

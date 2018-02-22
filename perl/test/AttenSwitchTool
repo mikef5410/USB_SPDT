@@ -369,6 +369,54 @@ SW: {
   $currentDev->atten($setting);
 }
 
+sub EEpromViewport_map_cb {
+  printf("EEprom tab entered.\n");
+}
+
+sub aboutActivated {
+  my $about_dialog=$builder->get_object('aboutDialog');
+
+  $about_dialog->run();
+  $about_dialog->hide();
+}
+
+sub writePolarity_clicked {
+  my $widget = shift;
+  my $data   = shift;
+
+  return if (!defined($currentDev));
+}
+
+sub writeExtraID_clicked {
+  my $widget = shift;
+  my $data   = shift;
+
+  return if (!defined($currentDev));
+}
+
+sub writeSerial_clicked {
+  my $widget = shift;
+  my $data   = shift;
+
+  return if (!defined($currentDev));
+}
+
+sub writeProdString_clicked {
+  my $widget = shift;
+  my $data   = shift;
+
+  return if (!defined($currentDev));
+}
+
+sub writeVidPid_clicked {
+  my $widget = shift;
+  my $data   = shift;
+
+  return if (!defined($currentDev));
+}
+
+
+
 __DATA__
 
 

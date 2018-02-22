@@ -337,6 +337,24 @@ void copyFromEE(char *dest, uint16_t addr, uint8_t len)
 }
 
 //Get USB identifiers from EEPROM if the first byte of eeprom matches MAGIC
+
+// EEprom memory map:
+// 0 - Magic. 0xAA if it's not there, don't read eeprom
+// 1,2 - VID little endian
+// 3,4 - PID little endian
+// 5,6 - Mfg pointer. Address of Mfg string. If ptr or length are zero, don't read.
+// 7 - Mfg length
+// 8,9 - Product string pointer (LE).
+// A - Product string length
+// B,C - Serial number pointer (LE).
+// D  - Serial number length
+// E  - S1 is pulse high (boolean)
+// F  - S2 is pulse high (boolean)
+// 10,11 - Extra string ptr.
+// 12 - Extra string length.
+//
+// Strings should start at 0x30 to leave room.
+
 void readEEprom(void)
 {
   uint8_t dataValid;

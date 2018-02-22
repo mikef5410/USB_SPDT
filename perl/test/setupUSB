@@ -40,7 +40,7 @@ if ( $result == AttenSwitch::SUCCESS ) {
   print("Got device\n");
 }
 
-my $stringAddr = 0x20;
+my $stringAddr = 0x30;
 $dut->writeEE( 1, pack( "vv", hex($vendorId), hex($productId) ) );
 $dut->writeEE( 5, pack( "vC", $stringAddr,    length($manufacturer) ) );
 if ( length($manufacturer) ) {
