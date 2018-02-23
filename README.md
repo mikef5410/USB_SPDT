@@ -1,6 +1,7 @@
 ## USB_SPDT
 
-USB control of Standard SPDT Coax-switches
+USB control of Standard SPDT Coax-switches. This project is derived from
+[my USB Attenuator/Switch/Stacklight project](https://github.com/mikef5410/USB_Attenuator_Switch_Stacklight)
 
 ![USB Dual Microwave Coax Switches](/doc/DualSPDT_Front.jpg)
 
