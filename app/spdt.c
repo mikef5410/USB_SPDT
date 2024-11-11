@@ -122,6 +122,15 @@ void s2_j1sel(int on)
 void spdt_set(spdtSel_t swtch, spdtSetting_t sel)
 {
   if (swtch == SW1) {
+    if (sel == J1SEL) {
+      gpio_set(D4);
+      gpio_clear(D5);
+      gpio_clear(D6);
+    } else {
+      gpio_clear(D4);
+      gpio_clear(D5);
+      gpio_set(D6);
+    }      
     s1_j1sel(sel == J1SEL);
   } else {
     s2_j1sel(sel == J1SEL);

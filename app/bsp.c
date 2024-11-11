@@ -108,6 +108,12 @@ void setupGPIOs(void)
   gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0);
   gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, GPIO0);
   gpio_clear(GPIOA,GPIO0);
+
+  //D4,5,6 LEDs
+  gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0|GPIO8|GPIO9|GPIO10);
+  gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, GPIO0|GPIO8|GPIO9|GPIO10);
+  gpio_clear(GPIOA,GPIO0|GPIO8|GPIO9|GPIO10);
+
   
   //Grn LED
   gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0);
