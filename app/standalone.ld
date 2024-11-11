@@ -47,7 +47,7 @@ ENTRY(reset_handler)
 /* Define sections. */
 SECTIONS
 {
-	.text : {
+	.text (READONLY) : {
 		*(.vectors)	/* Vector table */
                 *(.after_vectors*)
              	*(.text*)	/* Program code */
@@ -58,20 +58,20 @@ SECTIONS
 
 	/* C++ Static constructors/destructors, also used for __attribute__
 	 * ((constructor)) and the likes */
-	.preinit_array : {
+	.preinit_array (READONLY) : {
 		. = ALIGN(4);
 		__preinit_array_start = .;
 		KEEP (*(.preinit_array))
 		__preinit_array_end = .;
 	} >rom
-	.init_array : {
+	.init_array (READONLY) : {
 		. = ALIGN(4);
 		__init_array_start = .;
 		KEEP (*(SORT(.init_array.*)))
 		KEEP (*(.init_array))
 		__init_array_end = .;
 	} >rom
-	.fini_array : {
+	.fini_array (READONLY) : {
 		. = ALIGN(4);
 		__fini_array_start = .;
 		KEEP (*(.fini_array))
@@ -83,10 +83,10 @@ SECTIONS
 	 * Another section used by C++ stuff, appears when using newlib with
 	 * 64bit (long long) printf support
 	 */
-	.ARM.extab : {
+	.ARM.extab (READONLY) : {
 		*(.ARM.extab*)
 	} >rom
-	.ARM.exidx : {
+	.ARM.exidx (READONLY) : {
 		__exidx_start = .;
 		*(.ARM.exidx*)
 		__exidx_end = .;
